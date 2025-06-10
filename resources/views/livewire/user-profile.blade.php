@@ -95,16 +95,15 @@
                         <div class="mb-3 col-md-6">
                             <label class="form-label">Position Applied For</label>
                             <div class="input-group input-group-outline">
-                                <select wire:model.blur="user.job_position" class="form-control p-2">
-                                    <option value="">-- Pilih Posisi --</option>
-                                    {{-- --- PERBAIKAN ITERASI --- --}}
-                                    @foreach ($jobPositions as $position)
-                                        <option value="{{ $position->name }}">{{ $position->name }}</option>
+                                <select wire:model="user.job_position_id" class="form-control">
+                                    <option value="">Pilih Posisi</option>
+                                    @foreach($this->jobPositions as $position)
+                                        <option value="{{ $position->id }}">{{ $position->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
-                            @error('user.job_position')
-                            <p class='text-danger inputerror mt-1 text-xs'>{{ $message }} </p>
+                            @error('user.job_position_id')
+                                <p class='text-danger inputerror mt-1 text-xs'>{{ $message }} </p>
                             @enderror
                         </div>
 

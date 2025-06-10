@@ -40,7 +40,7 @@ class User extends Authenticatable
         'password',
         'role', 
         'phone',
-        'job_position', 
+        'job_position_id', 
         'profile_summary',
     ];
 
@@ -64,6 +64,11 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+
+    public function jobPosition()
+    {
+        return $this->belongsTo(JobPosition::class);
+    }
     public function testProgress(): HasMany
     {
         return $this->hasMany(UserTestProgress::class, 'user_id', 'id');

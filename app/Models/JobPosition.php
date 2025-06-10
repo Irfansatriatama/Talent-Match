@@ -20,4 +20,9 @@ class JobPosition extends Model
         'ideal_riasec_profile' => 'array', 
         'ideal_mbti_profile' => 'array',   
     ];
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
 }

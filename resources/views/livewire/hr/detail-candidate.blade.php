@@ -12,11 +12,10 @@
             <div class="col-auto my-auto">
                 <div class="h-100">
                     <h5 class="mb-1">{{ $candidate->name }}</h5>
-                     {{-- --- PERBAIKAN: Menambahkan Posisi yang Dilamar --- --}}
-                    @if($candidate->job_position)
-                        <span class="badge bg-gradient-primary">{{ $candidate->job_position }}</span>
+                    @if($candidate->jobPosition)
+                        <span class="badge badge-sm bg-gradient-primary">{{ $candidate->jobPosition->name }}</span>
                     @else
-                        <p class="mb-0 font-weight-normal text-sm">Posisi Belum Dipilih</p>
+                        <p class="mb-0 font-weight-normal text-sm text-muted">Posisi Belum Dipilih</p>
                     @endif
                 </div>
             </div>

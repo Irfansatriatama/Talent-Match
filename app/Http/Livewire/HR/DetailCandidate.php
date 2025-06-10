@@ -20,7 +20,8 @@ class DetailCandidate extends Component
 
         $this->candidate = $candidate->load([
             'testProgress.test', 
-            'latestMbtiScore'
+            'latestMbtiScore',
+            'jobPosition'
         ]);
         
         $this->totalTests = Test::count() ?: 3;
