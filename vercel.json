@@ -14,7 +14,7 @@
   ],
   "env": {
     "APP_ENV": "production",
-    "APP_DEBUG": "false",
+    "APP_DEBUG": "true",
     "APP_URL": "https://<nama-aplikasi-anda>.vercel.app",
     "APP_KEY": "base64:<ganti_dengan_app_key_anda>",
     "APP_CONFIG_CACHE": "/tmp/config.php",
