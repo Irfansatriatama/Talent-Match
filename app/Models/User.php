@@ -1,0 +1,120 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory; 
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+
+class User extends Authenticatable
+{
+    use HasApiTokens, HasFactory, Notifiable; 
+
+    
+    public const ROLE_CANDIDATE = 'candidate';
+    public const ROLE_HR = 'hr';
+
+    
+    public const JOB_POSITION_SOFTWARE_ENGINEER = 'Software Engineer';
+    public const JOB_POSITION_DATA_ANALYST = 'Data Analyst';
+    public const JOB_POSITION_CYBERSECURITY_SPECIALIST = 'Cybersecurity Specialist';
+
+    public static array $allowedJobPositions = [
+        self::JOB_POSITION_SOFTWARE_ENGINEER,
+        self::JOB_POSITION_DATA_ANALYST,
+        self::JOB_POSITION_CYBERSECURITY_SPECIALIST,
+    ];
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'role', 
+        'phone',
+        'job_position', 
+        'profile_summary',
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
+
+    public function testProgress(): HasMany
+    {
+        return $this->hasMany(UserTestProgress::class, 'user_id', 'id');
+    }
+
+    public function mbtiScores(): HasMany
+    {
+        return $this->hasMany(UserMbtiScore::class, 'user_id', 'id')->orderBy('calculated_at', 'desc');
+    }
+
+    public function latestMbtiScore(): HasOne
+    {
+        return $this->hasOne(UserMbtiScore::class, 'user_id', 'id')->latestOfMany('calculated_at');
+    }
+
+    public function testSessions(): HasMany
+    {
+        return $this->hasMany(TestSession::class, 'user_id', 'id');
+    }
+
+    public function userAnswers(): HasMany
+    {
+        return $this->hasMany(UserAnswer::class, 'user_id', 'id');
+    }
+
+    public function anpCalculationsMade(): HasMany
+    {
+        return $this->hasMany(ANPCalculation::class, 'calculated_by', 'id');
+    }
+
+    public function isCandidate(): bool
+    {
+        return $this->role === self::ROLE_CANDIDATE;
+    }
+
+    public function isHr(): bool
+    {
+        return $this->role === self::ROLE_HR;
+    }
+
+    public function hasCompletedAllTests(int $requiredTestCount = 3): bool
+    {
+        return $this->testProgress()->where('status', 'completed')->distinct('test_id')->count() >= $requiredTestCount;
+    }
+
+    public function getTestCompletionPercentage(int $totalTests = 3): float
+    {
+        if ($totalTests === 0) {
+            return 0.0;
+        }
+        $completedTests = $this->testProgress()->where('status', 'completed')->distinct('test_id')->count();
+        return ($completedTests / $totalTests) * 100;
+    }
+}
