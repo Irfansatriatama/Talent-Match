@@ -9,4 +9,3 @@ server.php
 webpack.mix.js 
 node_modules/
 vendor/ 
-storage/
