@@ -39,22 +39,25 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($alternativesToCompare as $rowCand)
-                                        <tr>
-                                            <td class="text-start text-sm font-weight-bold">{{ $rowCand->name }}</td>
-                                            @foreach ($alternativesToCompare as $colCand)
-                                                <td class="p-1">
-                                                    @if ($rowCand->id == $colCand->id)
-                                                        <div class="input-group input-group-outline">
+                                    {{-- Loop dengan tambahan $rowIndex untuk logika readonly --}}
+                                    @foreach ($alternativesToCompare as $rowIndex => $rowCand) {{-- <-- PERBAIKAN DI SINI --}}
+                                        <tr wire:key="alt-row-{{ $rowCand->id }}">
+                                            <td class="text-start text-sm font-weight-bold align-middle">{{ $rowCand->name }}</td>
+
+                                            {{-- Loop dengan tambahan $colIndex untuk logika readonly --}}
+                                            @foreach ($alternativesToCompare as $colIndex => $colCand) {{-- <-- PERBAIKAN DI SINI --}}
+                                                <td class="p-1 align-middle" wire:key="alt-cell-{{ $rowCand->id }}-{{ $colCand->id }}">
+                                                    <div class="input-group input-group-outline">
+                                                        @if ($rowCand->id == $colCand->id)
                                                             <input type="text" class="form-control form-control-sm text-center" value="1" readonly disabled>
-                                                        </div>
-                                                    @else
-                                                        <div class="input-group input-group-outline">
+                                                        @else
                                                             <input type="number" step="any" min="0.11" max="9"
-                                                                   wire:model.blur="matrixValues.{{ $rowCand->id }}.{{ $colCand->id }}"
-                                                                   class="form-control form-control-sm text-center @error('matrixValues.'.$rowCand->id.'.'.$colCand->id) is-invalid @enderror">
-                                                        </div>
-                                                    @endif
+                                                                wire:model.live="matrixValues.{{ $rowCand->id }}.{{ $colCand->id }}"
+                                                                class="form-control form-control-sm text-center @error('matrixValues.'.$rowCand->id.'.'.$colCand->id) is-invalid @enderror"
+                                                                @if ($rowIndex > $colIndex) readonly style="background-color: #f0f2f5; color: #6c757d;" @endif
+                                                            >
+                                                        @endif
+                                                    </div>
                                                 </td>
                                             @endforeach
                                         </tr>

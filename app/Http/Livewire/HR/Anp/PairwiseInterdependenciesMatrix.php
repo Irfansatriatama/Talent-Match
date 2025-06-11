@@ -90,13 +90,33 @@ class PairwiseInterdependenciesMatrix extends Component
         }
     }
 
+    // public function updatedMatrixValues($value, $key)
+    // {
+    //     [$rowId, $colId] = explode('.', $key);
+    //     if ($rowId == $colId) {
+    //         $this->matrixValues[$rowId][$colId] = 1;
+    //     } 
+        
+    // } tanpa resiprokal
+
     public function updatedMatrixValues($value, $key)
     {
+        // Pecah key 'rowId.colId' untuk mendapatkan ID
         [$rowId, $colId] = explode('.', $key);
+
+        // Pastikan kita tidak memproses diagonal utama (nilai selalu 1)
         if ($rowId == $colId) {
-            $this->matrixValues[$rowId][$colId] = 1;
-        } 
-        
+            return;
+        }
+
+        // Konversi nilai input menjadi float
+        $floatValue = (float) $value;
+
+        // Jika nilai yang dimasukkan valid (bukan 0),
+        // langsung hitung dan perbarui nilai kebalikannya.
+        if ($floatValue > 0) {
+            $this->matrixValues[$colId][$rowId] = round(1 / $floatValue, 3);
+        }
     }
 
     public function recalculateConsistency()

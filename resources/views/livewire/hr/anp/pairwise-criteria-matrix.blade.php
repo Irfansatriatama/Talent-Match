@@ -49,27 +49,37 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($elementsToCompare as $rowElement)
-                                        <tr>
-                                            <td class="text-start text-sm font-weight-bold">{{ $rowElement->name }}</td>
-                                            @foreach ($elementsToCompare as $colElement)
-                                                <td class="p-1">
+                                {{-- 1. Tambahkan $rowIndex untuk melacak nomor baris --}}
+                                @foreach ($elementsToCompare as $rowIndex => $rowElement)
+                                    <tr wire:key="row-{{ $rowElement->id }}">
+                                        <td class="text-start text-sm font-weight-bold align-middle">
+                                            {{ $rowElement->name }}
+                                        </td>
+
+                                        {{-- 2. Tambahkan $colIndex untuk melacak nomor kolom --}}
+                                        @foreach ($elementsToCompare as $colIndex => $colElement)
+                                            <td class="p-1 align-middle">
+                                                <div class="input-group input-group-outline">
                                                     @if ($rowElement->id == $colElement->id)
-                                                        <div class="input-group input-group-outline">
-                                                            <input type="text" class="form-control form-control-sm text-center" value="1" readonly disabled>
-                                                        </div>
+                                                        {{-- Input untuk diagonal utama (nilai selalu 1) --}}
+                                                        <input type="text" class="form-control form-control-sm text-center" value="1" readonly disabled>
                                                     @else
-                                                        <div class="input-group input-group-outline">
-                                                            <input type="number" step="any" min="0.11" max="9"
-                                                                   wire:model.blur="matrixValues.{{ $rowElement->id }}.{{ $colElement->id }}"
-                                                                   class="form-control form-control-sm text-center @error('matrixValues.'.$rowElement->id.'.'.$colElement->id) is-invalid @enderror">
-                                                        </div>
+                                                        {{-- Input untuk sel perbandingan lainnya --}}
+                                                        <input type="number" step="any" min="0.11" max="9"
+                                                            {{-- 3. Mengubah .blur menjadi .live untuk update real-time --}}
+                                                            wire:model.live="matrixValues.{{ $rowElement->id }}.{{ $colElement->id }}"
+                                                            class="form-control form-control-sm text-center @error('matrixValues.'.$rowElement->id.'.'.$colElement->id) is-invalid @enderror"
+                                                            
+                                                            {{-- 4. Menambahkan kondisi 'readonly' untuk segitiga bawah matriks --}}
+                                                            @if ($rowIndex > $colIndex) readonly style="background-color: #f0f2f5; color: #6c757d;" @endif
+                                                        >
                                                     @endif
-                                                </td>
-                                            @endforeach
-                                        </tr>
-                                    @endforeach
-                                </tbody>
+                                                </div>
+                                            </td>
+                                        @endforeach
+                                    </tr>
+                                @endforeach
+                            </tbody>
                             </table>
                              @foreach ($errors->get('matrixValues.*.*') as $message)
                                 <div class="text-danger text-xs ps-1">{{ $message }}</div>

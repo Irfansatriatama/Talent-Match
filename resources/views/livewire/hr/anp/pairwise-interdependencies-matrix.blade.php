@@ -39,22 +39,28 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($sourceElementsToCompare as $rowElement)
-                                        <tr>
-                                            <td class="text-start text-sm font-weight-bold">{{ $rowElement->name }}</td>
-                                            @foreach ($sourceElementsToCompare as $colElement)
-                                                <td class="p-1">
-                                                    @if ($rowElement->id == $colElement->id)
-                                                        <div class="input-group input-group-outline">
+                                    {{-- 1. Tambahkan $rowIndex untuk logika readonly --}}
+                                    @foreach ($sourceElementsToCompare as $rowIndex => $rowElement)
+                                        <tr wire:key="inter-row-{{ $rowElement->id }}">
+                                            <td class="text-start text-sm font-weight-bold align-middle">{{ $rowElement->name }}</td>
+                                            
+                                            {{-- 2. Tambahkan $colIndex untuk logika readonly --}}
+                                            @foreach ($sourceElementsToCompare as $colIndex => $colElement)
+                                                <td class="p-1 align-middle" wire:key="inter-cell-{{ $rowElement->id }}-{{ $colElement->id }}">
+                                                    <div class="input-group input-group-outline">
+                                                        @if ($rowElement->id == $colElement->id)
                                                             <input type="text" class="form-control form-control-sm text-center" value="1" readonly disabled>
-                                                        </div>
-                                                    @else
-                                                        <div class="input-group input-group-outline">
+                                                        @else
                                                             <input type="number" step="any" min="0.11" max="9"
-                                                                   wire:model.blur="matrixValues.{{ $rowElement->id }}.{{ $colElement->id }}"
-                                                                   class="form-control form-control-sm text-center @error('matrixValues.'.$rowElement->id.'.'.$colElement->id) is-invalid @enderror">
-                                                        </div>
-                                                    @endif
+                                                                {{-- 3. Mengubah .blur menjadi .live untuk update real-time --}}
+                                                                wire:model.live="matrixValues.{{ $rowElement->id }}.{{ $colElement->id }}"
+                                                                class="form-control form-control-sm text-center @error('matrixValues.'.$rowElement->id.'.'.$colElement->id) is-invalid @enderror"
+                                                                
+                                                                {{-- 4. Menambahkan kondisi 'readonly' untuk segitiga bawah --}}
+                                                                @if ($rowIndex > $colIndex) readonly style="background-color: #f0f2f5; color: #6c757d;" @endif
+                                                            >
+                                                        @endif
+                                                    </div>
                                                 </td>
                                             @endforeach
                                         </tr>
