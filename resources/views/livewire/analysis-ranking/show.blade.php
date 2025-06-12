@@ -3,7 +3,7 @@
 @section('title', 'Hasil Analisis ANP')
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid py-4">
     {{-- Judul Halaman --}}
     <h1 class="h3 mb-2 text-gray-800">Hasil Akhir Analisis ANP</h1>
     <p class="mb-4">
@@ -21,6 +21,8 @@
                     </a>
                 </div>
                 <div class="card-body">
+                    <x-anp-stepper currentStep="4" />
+
                     @if($anpAnalysis->results->isNotEmpty())
                         <div class="table-responsive">
                             <table class="table table-bordered" width="100%" cellspacing="0">
@@ -29,12 +31,14 @@
                                         <th style="width: 10%;">Peringkat</th>
                                         <th>Nama Kandidat</th>
                                         <th style="width: 20%;">Skor Global</th>
+                                        {{-- ▼▼▼ 1. TAMBAHKAN KOLOM HEADER BARU ▼▼▼ --}}
+                                        <th style="width: 15%;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach ($anpAnalysis->results->sortBy('rank') as $result)
                                         <tr>
-                                            <td class="text-center font-weight-bold h5">
+                                            <td class="text-center font-weight-bold h5 align-middle">
                                                 <span class="badge 
                                                     @if($result->rank == 1) bg-gradient-success
                                                     @elseif($result->rank == 2) bg-gradient-info
@@ -43,8 +47,15 @@
                                                     {{ $result->rank }}
                                                 </span>
                                             </td>
-                                            <td>{{ $result->candidate->name }}</td>
-                                            <td class="text-center font-weight-bold">{{ number_format($result->score, 5) }}</td>
+                                            <td class="align-middle">{{ $result->candidate->name }}</td>
+                                            <td class="text-center font-weight-bold align-middle">{{ number_format($result->score, 5) }}</td>
+                                            
+                                            {{-- ▼▼▼ 2. TAMBAHKAN KOLOM AKSI DENGAN TOMBOL DETAIL ▼▼▼ --}}
+                                            <td class="text-center align-middle">
+                                                <a href="{{ route('hr.detail-candidate', ['candidate' => $result->candidate->id]) }}" class="btn btn-sm btn-info mb-0">
+                                                    Lihat Detail
+                                                </a>
+                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>

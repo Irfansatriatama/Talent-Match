@@ -5,62 +5,145 @@ namespace App\Http\Livewire\HR;
 use App\Models\Test;
 use App\Models\User;
 use App\Models\UserTestProgress;
+use App\Models\AnpAnalysis;
+use App\Models\JobPosition;
+use App\Models\UserMbtiScore;
 use Livewire\Component;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class DashboardHr extends Component
 {
     public array $statistics = [];
-    public $recentActivities = [];
+    public $topCandidates = [];
+    public $recentAnalyses = [];
     
-    public array $chartLabels = [];
-    public array $chartData = [];
+    // Data untuk Chart.js
+    public array $mbtiLabels = [];
+    public array $mbtiData = [];
+    public array $mbtiColors = [];
+    
+    public array $riasecLabels = ['Realistic', 'Investigative', 'Artistic', 'Social', 'Enterprising', 'Conventional'];
+    public array $riasecData = [];
 
     public function mount()
     {
         $this->loadStatistics();
-        $this->loadRecentActivities();
-        $this->loadChartData(); 
+        $this->loadTopCandidates();
+        $this->loadRecentAnalyses();
+        $this->loadMbtiDistribution();
+        $this->loadRiasecDistribution();
     }
 
     public function loadStatistics(): void
     {
         $candidates = User::where('role', User::ROLE_CANDIDATE);
         $totalTests = Test::count() ?: 3;
+        
+        // Kandidat baru minggu ini
+        $weekStart = Carbon::now()->startOfWeek();
+        $newCandidatesThisWeek = User::where('role', User::ROLE_CANDIDATE)
+            ->where('created_at', '>=', $weekStart)
+            ->count();
+        
+        // Analisis ANP bulan ini
+        $monthStart = Carbon::now()->startOfMonth();
+        $anpThisMonth = AnpAnalysis::where('created_at', '>=', $monthStart)->count();
+
+        $totalCandidates = $candidates->count();
+        $completedAll = $candidates->clone()->whereHas('testProgress', function ($q) {
+            $q->where('status', 'completed');
+        }, '>=', $totalTests)->count();
 
         $this->statistics = [
-            'total_candidates' => $candidates->count(),
-            'completed_all_tests' => $candidates->clone()->whereHas('testProgress', function ($q) {
-                $q->where('status', 'completed');
-            }, '>=', $totalTests)->count(),
+            'total_candidates' => $totalCandidates,
+            'completed_all_tests' => $completedAll,
             'tests_in_progress' => UserTestProgress::where('status', 'in_progress')->distinct('user_id')->count(),
-            'average_programming_score' => round(UserTestProgress::where('test_id', 1) 
+            'average_programming_score' => round(UserTestProgress::where('test_id', 1)
                 ->where('status', 'completed')
                 ->avg('score') ?? 0, 2),
+            'new_candidates_this_week' => $newCandidatesThisWeek,
+            'anp_analyses_count' => AnpAnalysis::count(),
+            'anp_this_month' => $anpThisMonth,
+            'completion_rate' => $totalCandidates > 0 ? round(($completedAll / $totalCandidates) * 100, 1) : 0
         ];
     }
 
-    public function loadRecentActivities($limit = 5): void
+    public function loadTopCandidates(): void
     {
-        $this->recentActivities = UserTestProgress::with(['user', 'test'])
-            ->latest('updated_at')
-            ->limit($limit)
+        // Ambil 5 kandidat dengan skor rata-rata tertinggi yang sudah selesai semua tes
+        $this->topCandidates = User::where('role', User::ROLE_CANDIDATE)
+            ->whereHas('testProgress', function($q) {
+                $q->where('status', 'completed');
+            }, '>=', 3)
+            ->with(['testProgress' => function($q) {
+                $q->where('status', 'completed');
+            }, 'jobPosition'])
+            ->get()
+            ->map(function($user) {
+                $avgScore = $user->testProgress
+                    ->where('status', 'completed')
+                    ->avg('score');
+                $user->average_score = round($avgScore ?: 0, 2);
+                return $user;
+            })
+            ->sortByDesc('average_score')
+            ->take(5);
+    }
+    
+    public function loadRecentAnalyses(): void
+    {
+        // Ambil 5 analisis terbaru dengan informasi lengkap
+        $this->recentAnalyses = AnpAnalysis::with(['jobPosition', 'candidates'])
+            ->withCount('candidates')
+            ->latest()
+            ->limit(5)
             ->get();
     }
     
-    public function loadChartData(): void
+    public function loadMbtiDistribution(): void
     {
-        $stats = Test::withCount([
-            'userProgress as completed_count' => fn($q) => $q->where('status', 'completed'),
-            'userProgress as total_attempts'
-        ])->orderBy('test_order')->get();
+        // Ambil distribusi MBTI dari kandidat yang sudah menyelesaikan tes MBTI
+        $mbtiDistribution = UserMbtiScore::selectRaw('mbti_type, COUNT(*) as count')
+            ->whereHas('user', function($q) {
+                $q->where('role', User::ROLE_CANDIDATE);
+            })
+            ->groupBy('mbti_type')
+            ->orderByDesc('count')
+            ->get();
         
-        $this->chartLabels = [];
-        $this->chartData = [];
-
-        foreach ($stats as $test) {
-            $this->chartLabels[] = $test->test_name;
-            $this->chartData[] = $test->total_attempts > 0 ? round(($test->completed_count / $test->total_attempts) * 100) : 0;
+        $this->mbtiLabels = $mbtiDistribution->pluck('mbti_type')->toArray();
+        $this->mbtiData = $mbtiDistribution->pluck('count')->toArray();
+        
+        // Warna untuk setiap tipe MBTI
+        $this->mbtiColors = [
+            '#e91e63', '#9c27b0', '#673ab7', '#3f51b5',
+            '#2196f3', '#03a9f4', '#00bcd4', '#009688',
+            '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b',
+            '#ffc107', '#ff9800', '#ff5722', '#795548'
+        ];
+    }
+    
+    public function loadRiasecDistribution(): void
+    {
+        // Hitung distribusi RIASEC berdasarkan huruf dominan (huruf pertama dari hasil)
+        $riasecCounts = ['R' => 0, 'I' => 0, 'A' => 0, 'S' => 0, 'E' => 0, 'C' => 0];
+        
+        $riasecResults = UserTestProgress::where('test_id', 2) // Asumsi test_id 2 adalah RIASEC
+            ->where('status', 'completed')
+            ->whereNotNull('result_summary')
+            ->pluck('result_summary');
+        
+        foreach ($riasecResults as $result) {
+            if (strlen($result) > 0) {
+                $dominantType = substr($result, 0, 1);
+                if (array_key_exists($dominantType, $riasecCounts)) {
+                    $riasecCounts[$dominantType]++;
+                }
+            }
         }
+        
+        $this->riasecData = array_values($riasecCounts);
     }
 
     public function render()

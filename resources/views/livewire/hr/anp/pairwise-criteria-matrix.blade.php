@@ -1,131 +1,147 @@
 <div class="container-fluid py-4">
     <div class="card">
         <div class="card-header p-3">
-            <h5 class="mb-0">Perbandingan Berpasangan</h5>
+            <h5 class="mb-0">Perbandingan Berpasangan Kriteria</h5>
             <p class="text-sm">Bandingkan tingkat kepentingan relatif antar item di bawah ini.</p>
         </div>
         <div class="card-body">
-            <ul class="wizard-stepper">
-                 <li class="step active">
-                    <div class="step-icon"><i class="material-icons">description</i></div>
-                    <div class="step-title">1. Inisiasi</div>
-                </li>
-                <li class="step active">
-                    <div class="step-icon"><i class="material-icons">hub</i></div>
-                    <div class="step-title">2. Jaringan</div>
-                </li>
-                <li class="step active">
-                    <div class="step-icon"><i class="material-icons">rule</i></div>
-                    <div class="step-title">3. Perbandingan</div>
-                </li>
-                <li class="step">
-                    <div class="step-icon"><i class="material-icons">emoji_events</i></div>
-                    <div class="step-title">4. Hasil</div>
-                </li>
-            </ul>
+            {{-- IMPLEMENTASI KOMPONEN STEPPER --}}
+            <x-anp-stepper currentStep="3" />
+
+            {{-- KONTEKS PERBANDINGAN --}}
+            <div class="alert alert-light text-dark p-3 text-center mb-4" role="alert">
+                <h6 class="text-dark mb-1">Konteks Perbandingan</h6>
+                <p class="mb-0">
+                    Membandingkan {{ $elementTypeToCompare == App\Models\AnpElement::class ? 'Elemen' : 'Cluster' }} terhadap 
+                    <strong class="text-primary">
+                        @if ($controlCriterionContext === 'goal')
+                            Goal Utama ({{ $analysis->jobPosition->name }})
+                        @elseif ($controlCriterionObject)
+                            {{ $controlCriterionObject->name }}
+                        @endif
+                    </strong>
+                </p>
+            </div>
 
             @if (count($elementsToCompare) < 2)
-                <div class="alert alert-warning text-white">Minimal 2 item diperlukan untuk perbandingan. Silakan kembali ke halaman Definisi Jaringan untuk menambahkan elemen/cluster.</div>
+                <div class="alert alert-warning text-white">
+                    Minimal 2 item diperlukan untuk perbandingan. Silakan kembali ke halaman Definisi Jaringan untuk menambahkan elemen/cluster.
+                </div>
             @else
-                <div class="row">
-                    <div class="col-lg-8">
-                        <h6>Konteks: Membandingkan {{ $elementTypeToCompare == App\Models\AnpElement::class ? 'Elemen' : 'Cluster' }} terhadap 
-                            <strong>
-                            @if ($controlCriterionContext === 'goal')
-                                Goal Utama ({{ $analysis->jobPosition->name }})
-                            @elseif ($controlCriterionObject)
-                                {{ $controlCriterionObject->name }}
-                            @endif
-                            </strong>
-                        </h6>
-                        <div class="table-responsive">
-                            <table class="table table-bordered text-center align-items-center">
-                                <thead>
-                                    <tr>
-                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Elemen</th>
-                                        @foreach ($elementsToCompare as $colElement)
-                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" style="white-space: normal; vertical-align: middle;">{{ $colElement->name }}</th>
-                                        @endforeach
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                {{-- 1. Tambahkan $rowIndex untuk melacak nomor baris --}}
-                                @foreach ($elementsToCompare as $rowIndex => $rowElement)
-                                    <tr wire:key="row-{{ $rowElement->id }}">
-                                        <td class="text-start text-sm font-weight-bold align-middle">
-                                            {{ $rowElement->name }}
-                                        </td>
-
-                                        {{-- 2. Tambahkan $colIndex untuk melacak nomor kolom --}}
-                                        @foreach ($elementsToCompare as $colIndex => $colElement)
-                                            <td class="p-1 align-middle">
-                                                <div class="input-group input-group-outline">
-                                                    @if ($rowElement->id == $colElement->id)
-                                                        {{-- Input untuk diagonal utama (nilai selalu 1) --}}
-                                                        <input type="text" class="form-control form-control-sm text-center" value="1" readonly disabled>
-                                                    @else
-                                                        {{-- Input untuk sel perbandingan lainnya --}}
-                                                        <input type="number" step="any" min="0.11" max="9"
-                                                            {{-- 3. Mengubah .blur menjadi .live untuk update real-time --}}
-                                                            wire:model.live="matrixValues.{{ $rowElement->id }}.{{ $colElement->id }}"
-                                                            class="form-control form-control-sm text-center @error('matrixValues.'.$rowElement->id.'.'.$colElement->id) is-invalid @enderror"
-                                                            
-                                                            {{-- 4. Menambahkan kondisi 'readonly' untuk segitiga bawah matriks --}}
-                                                            @if ($rowIndex > $colIndex) readonly style="background-color: #f0f2f5; color: #6c757d;" @endif
-                                                        >
-                                                    @endif
-                                                </div>
-                                            </td>
-                                        @endforeach
-                                    </tr>
+                {{-- MATRIKS PERBANDINGAN --}}
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered text-center align-items-center">
+                        <thead>
+                            <tr>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Elemen</th>
+                                @foreach ($elementsToCompare as $colElement)
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" style="white-space: normal; vertical-align: middle;">
+                                        {{ $colElement->name }}
+                                    </th>
                                 @endforeach
-                            </tbody>
-                            </table>
-                             @foreach ($errors->get('matrixValues.*.*') as $message)
-                                <div class="text-danger text-xs ps-1">{{ $message }}</div>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($elementsToCompare as $rowIndex => $rowElement)
+                                <tr wire:key="row-{{ $rowElement->id }}">
+                                    <td class="text-start text-sm font-weight-bold align-middle">
+                                        {{ $rowElement->name }}
+                                    </td>
+                                    @foreach ($elementsToCompare as $colIndex => $colElement)
+                                        <td class="p-1 align-middle">
+                                            <div class="input-group input-group-outline">
+                                                @if ($rowElement->id == $colElement->id)
+                                                    <input type="text" class="form-control form-control-sm text-center" value="1" readonly disabled>
+                                                @else
+                                                    <input type="number" step="any" min="0.11" max="9"
+                                                        wire:model.live="matrixValues.{{ $rowElement->id }}.{{ $colElement->id }}"
+                                                        class="form-control form-control-sm text-center @error('matrixValues.'.$rowElement->id.'.'.$colElement->id) is-invalid @enderror"
+                                                        @if ($rowIndex > $colIndex) readonly style="background-color: #f0f2f5; color: #6c757d;" @endif
+                                                    >
+                                                @endif
+                                            </div>
+                                        </td>
+                                    @endforeach
+                                </tr>
                             @endforeach
-                        </div>
+                        </tbody>
+                    </table>
+                    @foreach ($errors->get('matrixValues.*.*') as $message)
+                        <div class="text-danger text-xs ps-1">{{ $message }}</div>
+                    @endforeach
+                </div>
+
+                {{-- AREA BAWAH: 2 KOLOM --}}
+                <div class="row">
+                    {{-- KOLOM KIRI: PANDUAN SKALA SAATY --}}
+                    <div class="col-lg-5">
+                        <x-saaty-scale-guide />
                     </div>
 
-                    <div class="col-lg-4">
-                        <h6>Hasil Kalkulasi</h6>
+                    {{-- KOLOM KANAN: HASIL KALKULASI & AKSI --}}
+                    <div class="col-lg-7">
                         <div class="card bg-gray-100">
+                            <div class="card-header pb-2">
+                                <h6 class="mb-0">Hasil Kalkulasi & Aksi</h6>
+                            </div>
                             <div class="card-body">
                                 @if ($calculationResult && !isset($calculationResult['error']))
-                                    <h6 class="mb-1">Rasio Konsistensi (CR)</h6>
-                                    <h5 class="font-weight-bolder @if(!$isConsistent) text-danger @else text-success @endif">
-                                        {{ number_format($consistencyRatio, 4) }}
-                                    </h5>
-                                    @if ($isConsistent)
-                                        <span class="badge bg-gradient-success">Konsisten</span>
-                                    @else
-                                        <span class="badge bg-gradient-danger">Tidak Konsisten</span>
-                                        <p class="text-xs text-danger mt-1">Nilai CR harus <= {{ config('anp.consistency_ratio_threshold', 0.10) }}. Harap perbaiki nilai perbandingan.</p>
+                                    <div class="row">
+                                        <div class="col-md-4 text-center border-end">
+                                            <h6 class="text-xs text-uppercase mb-1">Rasio Konsistensi</h6>
+                                            <h3 class="font-weight-bolder @if(!$isConsistent) text-danger @else text-success @endif mb-0">
+                                                {{ number_format($consistencyRatio, 4) }}
+                                            </h3>
+                                            @if ($isConsistent)
+                                                <span class="badge bg-gradient-success">Konsisten</span>
+                                            @else
+                                                <span class="badge bg-gradient-danger">Tidak Konsisten</span>
+                                            @endif
+                                        </div>
+                                        <div class="col-md-8">
+                                            <h6 class="text-xs text-uppercase mb-2">Vektor Prioritas (Bobot)</h6>
+                                            <div class="table-responsive" style="max-height: 150px;">
+                                                <table class="table table-sm align-items-center mb-0">
+                                                    @foreach ($priorityVector as $elementId => $weight)
+                                                        <tr>
+                                                            <td class="text-sm">{{ collect($elementsToCompare)->firstWhere('id', $elementId)->name ?? 'N/A' }}</td>
+                                                            <td class="text-end">
+                                                                <span class="badge bg-gradient-info">{{ number_format($weight, 4) }}</span>
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @if (!$isConsistent)
+                                        <div class="alert alert-danger text-white mt-3 mb-0" role="alert">
+                                            <small>CR harus ≤ {{ config('anp.consistency_ratio_threshold', 0.10) }}. Harap perbaiki nilai perbandingan.</small>
+                                        </div>
                                     @endif
-                                    <hr class="horizontal dark my-3">
-                                    <h6 class="mb-2">Vektor Prioritas (Bobot)</h6>
-                                    <ul class="list-group">
-                                        @foreach ($priorityVector as $elementId => $weight)
-                                            <li class="list-group-item border-0 d-flex justify-content-between ps-0 mb-2 border-radius-lg">
-                                                <span class="text-sm">{{ collect($elementsToCompare)->firstWhere('id', $elementId)->name ?? 'N/A' }}</span>
-                                                <span class="text-sm fw-bold">{{ number_format($weight, 4) }}</span>
-                                            </li>
-                                        @endforeach
-                                    </ul>
                                 @elseif(isset($calculationResult['error']))
-                                    <div class="alert alert-danger text-white p-2 text-sm">{{ $calculationResult['error'] }}</div>
+                                    <div class="alert alert-danger text-white" role="alert">
+                                        {{ $calculationResult['error'] }}
+                                    </div>
                                 @else
-                                    <p class="text-sm text-secondary text-center">Tekan tombol "Hitung Konsistensi" untuk melihat hasilnya di sini.</p>
+                                    <div class="text-center py-4">
+                                        <i class="material-icons text-5xl text-secondary opacity-5">calculate</i>
+                                        <p class="text-sm text-secondary mt-2">Tekan tombol "Hitung Konsistensi" untuk melihat hasilnya</p>
+                                    </div>
                                 @endif
+
+                                <div class="d-grid gap-2 mt-3">
+                                    <button wire:click="recalculateConsistency" class="btn btn-outline-info" wire:loading.attr="disabled">
+                                        <span wire:loading.remove>Hitung Konsistensi</span>
+                                        <span wire:loading>Menghitung...</span>
+                                    </button>
+                                    <button wire:click="saveAndContinue" class="btn bg-gradient-primary" 
+                                        wire:loading.attr="disabled" 
+                                        {{ $isConsistent === true ? '' : 'disabled' }}>
+                                        Simpan & Lanjutkan
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                        <div class="d-grid gap-2 mt-3">
-                            <button wire:click="recalculateConsistency" class="btn btn-outline-info" wire:loading.attr="disabled">
-                                Hitung Konsistensi
-                            </button>
-                            <button wire:click="saveAndContinue" class="btn bg-gradient-primary" wire:loading.attr="disabled" {{ $isConsistent === true ? '' : 'disabled' }}>
-                                Simpan & Lanjutkan
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -133,7 +149,7 @@
 
             <hr class="horizontal dark my-4">
             <div class="d-flex justify-content-between">
-                 <a href="{{ route('hr.anp.analysis.network.define', $analysis->id) }}" class="btn btn-outline-secondary">
+                <a href="{{ route('hr.anp.analysis.network.define', $analysis->id) }}" class="btn btn-outline-secondary">
                     <i class="material-icons text-sm">arrow_back</i> Kembali ke Definisi Jaringan
                 </a>
             </div>

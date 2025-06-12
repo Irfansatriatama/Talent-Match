@@ -5,24 +5,7 @@
             <p class="text-sm">Definisikan kriteria (elemen), kelompokkan (cluster), dan tentukan hubungan antar keduanya (interdependensi).</p>
         </div>
         <div class="card-body">
-            <ul class="wizard-stepper">
-                <li class="step active">
-                    <div class="step-icon"><i class="material-icons">description</i></div>
-                    <div class="step-title">1. Inisiasi</div>
-                </li>
-                <li class="step active">
-                    <div class="step-icon"><i class="material-icons">hub</i></div>
-                    <div class="step-title">2. Jaringan</div>
-                </li>
-                <li class="step">
-                    <div class="step-icon"><i class="material-icons">rule</i></div>
-                    <div class="step-title">3. Perbandingan</div>
-                </li>
-                <li class="step">
-                    <div class="step-icon"><i class="material-icons">emoji_events</i></div>
-                    <div class="step-title">4. Hasil</div>
-                </li>
-            </ul>
+            <x-anp-stepper currentStep="2" />
 
             <div class="row">
                 <div class="col-lg-5">

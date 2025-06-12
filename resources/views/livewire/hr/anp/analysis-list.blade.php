@@ -36,7 +36,21 @@
                                 <input wire:model.live.debounce.300ms="searchTerm" type="text" class="form-control">
                             </div>
                         </div>
-                         <div class="col-md-2">
+                        {{-- FILTER BARU: Status --}}
+                        <div class="col-md-3">
+                            <div class="input-group input-group-outline">
+                                <select wire:model.live="statusFilter" class="form-control">
+                                    <option value="">Semua Status</option>
+                                    <option value="completed">✅ Completed</option>
+                                    <option value="calculating">⏳ Calculating</option>
+                                    <option value="criteria_comparison_pending">📊 Criteria Pending</option>
+                                    <option value="alternatives_pending">👥 Alternatives Pending</option>
+                                    <option value="network_pending">🔗 Network Pending</option>
+                                    <option value="error">❌ Error</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
                             <div class="input-group input-group-outline">
                                 <select wire:model.live="perPage" class="form-control">
                                     <option value="10">10/halaman</option>
@@ -76,28 +90,57 @@
                                     <td class="align-middle text-center text-sm">
                                         @php
                                             $statusClass = 'bg-gradient-secondary';
-                                            if ($analysis->status == 'completed') $statusClass = 'bg-gradient-success';
-                                            elseif ($analysis->status == 'error') $statusClass = 'bg-gradient-danger';
-                                            elseif (str_contains($analysis->status, 'pending')) $statusClass = 'bg-gradient-warning';
+                                            $statusIcon = '';
+                                            if ($analysis->status == 'completed') {
+                                                $statusClass = 'bg-gradient-success';
+                                                $statusIcon = '✅';
+                                            } elseif ($analysis->status == 'error') {
+                                                $statusClass = 'bg-gradient-danger';
+                                                $statusIcon = '❌';
+                                            } elseif ($analysis->status == 'calculating') {
+                                                $statusClass = 'bg-gradient-info';
+                                                $statusIcon = '⏳';
+                                            } elseif (str_contains($analysis->status, 'pending')) {
+                                                $statusClass = 'bg-gradient-warning';
+                                                $statusIcon = '⚠️';
+                                            }
                                         @endphp
-                                        <span class="badge badge-sm {{ $statusClass }}">{{ str_replace('_', ' ', $analysis->status) }}</span>
+                                        <span class="badge badge-sm {{ $statusClass }}">
+                                            {{ $statusIcon }} {{ str_replace('_', ' ', $analysis->status) }}
+                                        </span>
                                     </td>
                                     <td class="align-middle text-center">
-                                        <span class="text-secondary text-xs font-weight-normal">{{ $analysis->created_at->format('d M Y, H:i') }}</span>
+                                        <span class="text-secondary text-xs font-weight-normal">
+                                            {{ $analysis->created_at->locale('id')->tz('Asia/Jakarta')->isoFormat('D MMMM YYYY, HH:mm') }} WIB
+                                        </span>
                                     </td>
                                     <td class="align-middle text-center">
                                         {{-- Tombol Lihat Hasil --}}
-                                        <a href="{{ route('hr.anp.analysis.show', ['anpAnalysis' => $analysis->id]) }}" class="text-secondary font-weight-bold text-xs" data-bs-toggle="tooltip" data-bs-placement="top" title="Lihat Hasil/Detail">
+                                        <a href="{{ route('hr.anp.analysis.show', ['anpAnalysis' => $analysis->id]) }}" 
+                                           class="text-secondary font-weight-bold text-xs" 
+                                           data-bs-toggle="tooltip" 
+                                           data-bs-placement="top" 
+                                           title="Lihat Hasil/Detail">
                                             <i class="material-icons text-sm">visibility</i>
                                         </a>
                                         {{-- Tombol Lanjutkan Proses --}}
                                         @if($analysis->status !== 'completed' && $analysis->status !== 'calculating')
-                                            <a href="{{ route('hr.anp.analysis.network.define', ['anpAnalysis' => $analysis->id]) }}" class="text-secondary font-weight-bold text-xs mx-2" data-bs-toggle="tooltip" data-bs-placement="top" title="Lanjutkan Proses">
+                                            <a href="{{ route('hr.anp.analysis.network.define', ['anpAnalysis' => $analysis->id]) }}" 
+                                               class="text-secondary font-weight-bold text-xs mx-2" 
+                                               data-bs-toggle="tooltip" 
+                                               data-bs-placement="top" 
+                                               title="Lanjutkan Proses">
                                                 <i class="material-icons text-sm">play_arrow</i>
                                             </a>
                                         @endif
                                         {{-- Tombol Hapus --}}
-                                        <a href="#" wire:click="deleteAnalysis({{ $analysis->id }})" wire:confirm="Anda yakin ingin menghapus sesi analisis ini secara permanen?" class="text-secondary font-weight-bold text-xs" data-bs-toggle="tooltip" data-bs-placement="top" title="Hapus Analisis">
+                                        <a href="#" 
+                                           wire:click="deleteAnalysis({{ $analysis->id }})" 
+                                           wire:confirm="Anda yakin ingin menghapus sesi analisis ini secara permanen?" 
+                                           class="text-secondary font-weight-bold text-xs" 
+                                           data-bs-toggle="tooltip" 
+                                           data-bs-placement="top" 
+                                           title="Hapus Analisis">
                                             <i class="material-icons text-sm">delete</i>
                                         </a>
                                     </td>

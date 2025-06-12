@@ -17,9 +17,6 @@
     
     {{-- Kartu yang berisi komponen Livewire --}}
     <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Langkah 2: Membangun Model Jaringan</h6>
-        </div>
         <div class="card-body">
             {{--
                 Komponen Livewire 'NetworkBuilder' akan menangani semua logika

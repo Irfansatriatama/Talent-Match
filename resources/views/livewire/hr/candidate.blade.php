@@ -10,36 +10,69 @@
                         </div>
                     </div>
 
-                    {{-- Area Filter dan Pencarian --}}
+                    {{-- AREA FILTER YANG DIPERBAIKI DAN DITAMBAH --}}
                     <div class="row mt-3 gx-2">
-                        <div class="col-md-4 col-sm-12 mb-2">
+                        {{-- Filter Pencarian --}}
+                        <div class="col-lg-3 col-md-4 col-sm-6 mb-2">
                             <div class="input-group input-group-outline">
                                 <label class="form-label">Cari Nama/Email...</label>
                                 <input wire:model.live.debounce.300ms="search" type="text" class="form-control">
                             </div>
                         </div>
-                        <div class="col-md-4 col-sm-6 mb-2">
+                        
+                        {{-- Filter Status --}}
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
                             <div class="input-group input-group-outline">
                                 <select wire:model.live="status" class="form-control">
-                                    <option value="">Semua Status Penyelesaian</option>
-                                    <option value="completed">Selesai Semua Tes</option>
-                                    <option value="in_progress">Sedang Mengerjakan</option>
-                                    <option value="not_started">Belum Mulai</option>
+                                    <option value="">Semua Status</option>
+                                    <option value="completed">✅ Selesai Semua Tes</option>
+                                    <option value="in_progress">🔄 Sedang Mengerjakan</option>
+                                    <option value="not_started">⏸️ Belum Mulai</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-4 col-sm-6 mb-2">
+                        
+                        {{-- FILTER BARU: Posisi Pekerjaan --}}
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
+                            <div class="input-group input-group-outline">
+                                <select wire:model.live="jobPositionId" class="form-control">
+                                    <option value="">Semua Posisi</option>
+                                    @foreach ($jobPositions as $position)
+                                        <option value="{{ $position->id }}">{{ $position->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        
+                        {{-- Filter MBTI --}}
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
                             <div class="input-group input-group-outline">
                                 <select wire:model.live="mbtiType" class="form-control">
-                                    <option value="">Semua Tipe MBTI</option>
+                                    <option value="">Semua MBTI</option>
                                     @foreach (['INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENFP', 'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ', 'ISTP', 'ISFP', 'ESTP', 'ESFP'] as $type)
                                         <option value="{{ $type }}">{{ $type }}</option>
                                     @endforeach
                                 </select>
                             </div>
                         </div>
+                        
+                        {{-- FILTER BARU: Tipe RIASEC --}}
+                        <div class="col-lg-3 col-md-4 col-sm-6 mb-2">
+                            <div class="input-group input-group-outline">
+                                <select wire:model.live="riasecType" class="form-control">
+                                    <option value="">Semua Tipe RIASEC</option>
+                                    <option value="R">R - Realistic (Realistis)</option>
+                                    <option value="I">I - Investigative (Investigatif)</option>
+                                    <option value="A">A - Artistic (Artistik)</option>
+                                    <option value="S">S - Social (Sosial)</option>
+                                    <option value="E">E - Enterprising (Wirausaha)</option>
+                                    <option value="C">C - Conventional (Konvensional)</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
+                
                 <div class="card-body px-0 pb-2">
                     <div class="table-responsive">
                         <table class="table align-items-center mb-0">
@@ -60,7 +93,7 @@
                                         // Ambil data tes untuk kemudahan akses
                                         $progTest = $candidate->testProgress->where('test_id', 1)->first();
                                         $riasecTest = $candidate->testProgress->where('test_id', 2)->first();
-                                        $mbtiTest = $candidate->testProgress->where('test_id', 3)->first(); // Tambahkan ini
+                                        $mbtiTest = $candidate->testProgress->where('test_id', 3)->first();
                                         
                                         // Untuk MBTI, ambil dari latestMbtiScore jika tes sudah completed
                                         $mbtiResult = null;
@@ -80,13 +113,19 @@
                                             </div>
                                         </td>
                                         <td class="align-middle text-center">
-                                            <p class="text-sm font-weight-bold mb-0">{{ ($progTest && $progTest->status == 'completed') ? ($progTest->score ?? 'N/A') : 'N/A' }}</p>
+                                            <p class="text-sm font-weight-bold mb-0">
+                                                {{ ($progTest && $progTest->status == 'completed') ? ($progTest->score ?? 'N/A') : '-' }}
+                                            </p>
                                         </td>
                                         <td class="align-middle text-center text-sm">
-                                            <span class="badge badge-sm bg-gradient-info">{{ ($riasecTest && $riasecTest->status == 'completed') ? ($riasecTest->result_summary ?? 'N/A') : 'N/A' }}</span>
+                                            <span class="badge badge-sm bg-gradient-info">
+                                                {{ ($riasecTest && $riasecTest->status == 'completed') ? ($riasecTest->result_summary ?? 'N/A') : '-' }}
+                                            </span>
                                         </td>
                                         <td class="align-middle text-center text-sm">
-                                            <span class="badge badge-sm bg-gradient-warning">{{ $mbtiResult ?? 'N/A' }}</span>
+                                            <span class="badge badge-sm bg-gradient-warning">
+                                                {{ $mbtiResult ?? '-' }}
+                                            </span>
                                         </td>
                                         <td class="align-middle text-center">
                                             <div class="progress-wrapper w-75 mx-auto">
@@ -96,15 +135,27 @@
                                                     </div>
                                                 </div>
                                                 <div class="progress">
-                                                    <div class="progress-bar @if($completionPercentage == 100) bg-gradient-success @else bg-gradient-info @endif" role="progressbar" style="width: {{ $completionPercentage }}%" aria-valuenow="{{ $completionPercentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                                    <div class="progress-bar @if($completionPercentage == 100) bg-gradient-success @else bg-gradient-info @endif" 
+                                                         role="progressbar" 
+                                                         style="width: {{ $completionPercentage }}%" 
+                                                         aria-valuenow="{{ $completionPercentage }}" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="100">
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td class="align-middle text-center">
-                                            <span class="text-secondary text-xs font-weight-normal">{{ $candidate->job_position ?? 'Belum Dipilih' }}</span>
+                                            {{-- PERBAIKAN: Gunakan relasi Eloquent yang benar --}}
+                                            <span class="text-secondary text-xs font-weight-bold">
+                                                {{ $candidate->jobPosition->name ?? 'Belum Dipilih' }}
+                                            </span>
                                         </td>
                                         <td class="align-middle">
-                                            <a href="{{ route('hr.detail-candidate', ['candidate' => $candidate->id]) }}" class="text-secondary font-weight-bold text-xs" data-bs-toggle="tooltip" data-bs-title="Lihat Detail Kandidat">
+                                            <a href="{{ route('hr.detail-candidate', ['candidate' => $candidate->id]) }}" 
+                                               class="text-secondary font-weight-bold text-xs" 
+                                               data-bs-toggle="tooltip" 
+                                               data-bs-title="Lihat Detail Kandidat">
                                                 <i class="material-icons text-sm">visibility</i> Detail
                                             </a>
                                         </td>
@@ -112,14 +163,14 @@
                                 @empty
                                     <tr>
                                         <td colspan="7" class="text-center p-3">
-                                            <p class="text-secondary">Tidak ada kandidat yang ditemukan.</p>
+                                            <p class="text-secondary">Tidak ada kandidat yang ditemukan dengan filter tersebut.</p>
                                         </td>
                                     </tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
-                    {{-- Pagination Dinamis --}}
+                    {{-- Pagination --}}
                     <div class="p-3">
                         {{ $candidates->links() }}
                     </div>

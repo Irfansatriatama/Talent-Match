@@ -11,10 +11,17 @@ class AnalysisList extends Component
     use WithPagination;
 
     public $searchTerm = '';
+    public $statusFilter = ''; // TAMBAHAN: Filter status
     public $perPage = 10;
     protected $paginationTheme = 'bootstrap';
 
+    // Reset halaman saat filter berubah
     public function updatingSearchTerm()
+    {
+        $this->resetPage();
+    }
+    
+    public function updatingStatusFilter()
     {
         $this->resetPage();
     }
@@ -32,13 +39,23 @@ class AnalysisList extends Component
 
     public function render()
     {
-        $analyses = AnpAnalysis::with(['jobPosition', 'hrUser'])
-            ->where('name', 'like', '%' . $this->searchTerm . '%')
-            ->orWhereHas('jobPosition', function ($query) {
-                $query->where('name', 'like', '%' . $this->searchTerm . '%');
-            })
-            ->orderBy('created_at', 'desc')
-            ->paginate($this->perPage);
+        $query = AnpAnalysis::with(['jobPosition', 'hrUser']);
+        
+        // Filter pencarian
+        $query->when($this->searchTerm, function($q) {
+            $q->where('name', 'like', '%' . $this->searchTerm . '%')
+              ->orWhereHas('jobPosition', function ($subQuery) {
+                  $subQuery->where('name', 'like', '%' . $this->searchTerm . '%');
+              });
+        });
+        
+        // FILTER BARU: Berdasarkan status
+        $query->when($this->statusFilter, function($q) {
+            $q->where('status', $this->statusFilter);
+        });
+        
+        // Ordering dan pagination
+        $analyses = $query->orderBy('created_at', 'desc')->paginate($this->perPage);
 
         return view('livewire.hr.anp.analysis-list', [
             'analyses' => $analyses,
