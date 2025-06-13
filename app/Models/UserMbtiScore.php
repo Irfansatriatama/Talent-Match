@@ -10,8 +10,7 @@ class UserMbtiScore extends Model
     protected $primaryKey = 'user_mbti_score_id';
     
     /**
-     * The attributes that are mass assignable.
-     * UPDATED: Memastikan semua kolom ada di fillable untuk mass assignment
+     *
      *
      * @var array
      */
@@ -51,7 +50,6 @@ class UserMbtiScore extends Model
     }
 
     /**
-     * Get the dominant function for each dichotomy.
      *
      * @return array
      */
@@ -66,7 +64,6 @@ class UserMbtiScore extends Model
     }
 
     /**
-     * Get detailed scores for each dichotomy.
      *
      * @return array
      */

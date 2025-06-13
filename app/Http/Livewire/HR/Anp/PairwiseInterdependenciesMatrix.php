@@ -89,33 +89,18 @@ class PairwiseInterdependenciesMatrix extends Component
             }
         }
     }
-
-    // public function updatedMatrixValues($value, $key)
-    // {
-    //     [$rowId, $colId] = explode('.', $key);
-    //     if ($rowId == $colId) {
-    //         $this->matrixValues[$rowId][$colId] = 1;
-    //     } 
-        
-    // } tanpa resiprokal
-
     public function updatedMatrixValues($value, $key)
     {
-        // Parse the key to get row and column IDs
         [$rowId, $colId] = explode('.', $key);
         
-        // Skip if this is a diagonal element (always 1)
         if ($rowId == $colId) {
             $this->matrixValues[$rowId][$colId] = 1;
             return;
         }
         
-        // Convert input value to float
         $floatValue = (float) $value;
         
-        // Validation: ensure value is within valid range
         if ($floatValue < 0.11 || $floatValue > 9) {
-            // Reset to previous value or default
             if (!isset($this->matrixValues[$rowId][$colId])) {
                 $this->matrixValues[$rowId][$colId] = 1;
             }
@@ -123,59 +108,62 @@ class PairwiseInterdependenciesMatrix extends Component
             return;
         }
         
-        // Clear any previous errors for this field
         $this->resetErrorBag("matrixValues.{$rowId}.{$colId}");
         $this->resetErrorBag("matrixValues.{$colId}.{$rowId}");
         
-        // Update the current cell
         $this->matrixValues[$rowId][$colId] = $floatValue;
         
-        // Calculate and update the reciprocal cell
         if ($floatValue > 0) {
             $reciprocalValue = round(1 / $floatValue, 4);
             $this->matrixValues[$colId][$rowId] = $reciprocalValue;
         }
         
-        // Reset calculation results since matrix has changed
         $this->consistencyRatio = null;
         $this->isConsistent = null;
         $this->priorityVector = [];
         $this->calculationResult = null;
         
-        // Optional: Auto-calculate consistency after each change (can be disabled for performance)
-        // $this->recalculateConsistency();
     }
 
     public function recalculateConsistency()
     {
-        if (count($this->sourceElementsToCompare) < 2) {
-            if (count($this->sourceElementsToCompare) == 1) {
-                $elId = $this->sourceElementsToCompare[0]->id;
-                $this->priorityVector = [$elId => 1.0];
-                $this->consistencyRatio = 0.0;
-                $this->isConsistent = true;
-                $this->calculationResult = ['priority_vector' => $this->priorityVector, 'consistency_ratio' => 0.0, 'is_consistent' => true];
-                $this->dispatch('notify', ['message' => 'Hanya 1 elemen, prioritas otomatis 1.', 'type' => 'info']);
-            }
-            return;
+        try {
+            $this->validate([
+                'matrixValues.*.*' => 'required|numeric|min:0.11|max:9'
+            ], [
+                'matrixValues.*.*.required' => 'Nilai ini wajib diisi.',
+                'matrixValues.*.*.numeric' => 'Nilai harus berupa angka.',
+                'matrixValues.*.*.min' => 'Nilai minimal adalah 1/9.',
+                'matrixValues.*.*.max' => 'Nilai maksimal adalah 9.',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->isConsistent = false;
+            $this->dispatch('notify', ['message' => 'Validasi gagal. Harap isi semua nilai perbandingan dengan benar.', 'type' => 'error']);
+            throw $e;
         }
 
-        $this->validate();
-
-        $service = new AnpCalculationService();
+        $service = new \App\Services\AnpCalculationService();
         $matrixForCalc = [];
-        foreach ($this->sourceElementsToCompare as $rowEl) {
-            foreach ($this->sourceElementsToCompare as $colEl) {
-                $matrixForCalc[$rowEl->id][$colEl->id] = (float) $this->matrixValues[$rowEl->id][$colEl->id];
+        
+        foreach ($this->alternativesToCompare as $rowAlt) {
+            foreach ($this->alternativesToCompare as $colAlt) {
+                if (isset($this->matrixValues[$rowAlt->id][$colAlt->id])) {
+                    $matrixForCalc[$rowAlt->id][$colAlt->id] = (float) $this->matrixValues[$rowAlt->id][$colAlt->id];
+                }
             }
         }
+
         $this->calculationResult = $service->calculateEigenvectorAndCR($matrixForCalc);
 
-        $this->priorityVector = $this->calculationResult['priority_vector'];
-        $this->consistencyRatio = $this->calculationResult['consistency_ratio'];
-        $this->isConsistent = $this->calculationResult['is_consistent'];
-        $message = 'Kalkulasi selesai. CR: ' . round($this->consistencyRatio, 4) . ($this->isConsistent ? ' (Konsisten)' : ' (Tidak Konsisten!)');
-        $this->dispatch('notify', ['message' => $message, 'type' => $this->isConsistent ? 'success' : 'error']);
+        if (isset($this->calculationResult['error'])) {
+            $this->dispatch('notify', ['message' => 'Error: ' . $this->calculationResult['error'], 'type' => 'error']);
+        } else {
+            $this->priorityVector = $this->calculationResult['priority_vector'];
+            $this->consistencyRatio = $this->calculationResult['consistency_ratio'];
+            $this->isConsistent = $this->calculationResult['is_consistent'];
+            $message = 'Kalkulasi selesai. CR: ' . round($this->consistencyRatio, 4) . ($this->isConsistent ? ' (Konsisten)' : ' (Tidak Konsisten!)');
+            $this->dispatch('notify', ['message' => $message, 'type' => $this->isConsistent ? 'success' : 'error']);
+        }
     }
 
     public function saveComparisons()

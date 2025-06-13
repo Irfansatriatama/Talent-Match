@@ -34,12 +34,10 @@
                 </div>
 
 
-                <!-- Tampilkan kandidat hanya jika posisi sudah dipilih -->
                 @if($showCandidateList)
                     <div class="mb-3" wire:key="candidate-section-{{ $job_position_id }}">
                         <label class="form-label fw-bold">Pilih Kandidat (Alternatif)</label>
                         
-                        <!-- Informasi jumlah kandidat -->
                         <p class="text-sm text-muted mb-2">
                             Ditemukan <strong>{{ $availableCandidates->count() }}</strong> kandidat yang telah melamar posisi ini 
                             dan sudah menyelesaikan semua {{ $totalTests }} tes yang diwajibkan.
@@ -48,7 +46,6 @@
                         @if($availableCandidates->count() > 0)
                             <div class="card border p-3 @error('selected_candidates') border-danger @enderror" style="max-height: 300px; overflow-y: auto;">
                                 <div class="row">
-                                    <!-- Tombol Select All/Deselect All -->
                                     <div class="col-12 mb-2">
                                         <button type="button" 
                                                 wire:click="$set('selected_candidates', {{ $availableCandidates->pluck('id')->toJson() }})" 
@@ -145,7 +142,7 @@
 
 @push('js')
 <script>
-    // Debug untuk melihat Livewire component state
+    // Debug 
     document.addEventListener('livewire:load', function () {
         Livewire.on('debugState', function (data) {
             console.log('Livewire State:', data);

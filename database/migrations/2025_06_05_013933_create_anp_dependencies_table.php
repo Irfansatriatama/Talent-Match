@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::create('anp_dependencies', function (Blueprint $table) {
             $table->id();
             $table->foreignId('anp_network_structure_id')->constrained('anp_network_structures')->onDelete('cascade');
-            $table->morphs('sourceable'); // Membuat sourceable_id dan sourceable_type
-            $table->morphs('targetable'); // Membuat targetable_id dan targetable_type
+            $table->morphs('sourceable'); 
+            $table->morphs('targetable'); 
             $table->text('description')->nullable();
             $table->timestamps();
         });

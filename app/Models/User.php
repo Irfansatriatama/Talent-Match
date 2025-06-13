@@ -45,7 +45,6 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
      *
      * @var array<int, string>
      */
@@ -55,7 +54,6 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be cast.
      *
      * @var array<string, string>
      */
@@ -84,18 +82,11 @@ class User extends Authenticatable
         return $this->hasOne(UserMbtiScore::class, 'user_id', 'id')->latestOfMany('calculated_at');
     }
 
-    /**
-     * NEW RELATION: Get the user's RIASEC score.
-     * Satu user memiliki satu hasil RIASEC
-     */
     public function riasecScore(): HasOne
     {
         return $this->hasOne(UserRiasecScore::class, 'user_id', 'id');
     }
 
-    /**
-     * Alias untuk konsistensi dengan latestMbtiScore
-     */
     public function latestRiasecScore(): HasOne
     {
         return $this->hasOne(UserRiasecScore::class, 'user_id', 'id')->latestOfMany('calculated_at');
@@ -126,10 +117,6 @@ class User extends Authenticatable
         return $this->role === self::ROLE_HR;
     }
 
-    /**
-     * UPDATED METHOD: Check if user has completed all tests
-     * Sekarang cek dari tabel skor terpisah, bukan dari result_summary
-     */
     public function hasCompletedAllTests(int $requiredTestCount = 3): bool
     {
         $completedProgram = $this->testProgress()

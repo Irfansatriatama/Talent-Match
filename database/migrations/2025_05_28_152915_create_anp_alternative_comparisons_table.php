@@ -11,9 +11,9 @@ return new class extends Migration
         Schema::create('anp_alternative_comparisons', function (Blueprint $table) {
             $table->id();
             $table->foreignId('anp_analysis_id')->constrained('anp_analyses')->onDelete('cascade');
-            $table->foreignId('anp_element_id')->constrained('anp_elements')->onDelete('cascade'); // Kriteria pembanding
-            $table->json('comparison_data'); // Menyimpan matriks dan ID alternatif (User ID) yang dibandingkan
-            $table->json('priority_vector')->nullable(); // Hasil perhitungan eigenvector
+            $table->foreignId('anp_element_id')->constrained('anp_elements')->onDelete('cascade');
+            $table->json('comparison_data'); 
+            $table->json('priority_vector')->nullable(); 
             $table->timestamps();
         });
     }

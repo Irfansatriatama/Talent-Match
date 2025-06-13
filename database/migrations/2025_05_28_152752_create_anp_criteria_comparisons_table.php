@@ -15,18 +15,14 @@ return new class extends Migration
             $table->id();
             $table->foreignId('anp_analysis_id')->constrained('anp_analyses')->onDelete('cascade');
             
-            // --- PERBAIKAN DI SINI ---
-            // Kita secara manual memberikan nama indeks yang lebih pendek ('criteria_control_index')
-            // sebagai argumen kedua pada method nullableMorphs().
             $table->nullableMorphs('control_criterionable', 'criteria_control_index');
             
-            $table->string('compared_elements_type'); // Misal: App\Models\AnpElement atau App\Models\AnpCluster
-            $table->json('comparison_data'); // Menyimpan matriks dan ID elemen/cluster yang dibandingkan
-            $table->json('priority_vector')->nullable(); // Hasil perhitungan eigenvector
-            $table->json('metadata')->nullable(); // Menambahkan dari saran Claude
+            $table->string('compared_elements_type'); 
+            $table->json('comparison_data'); 
+            $table->json('priority_vector')->nullable(); 
+            $table->json('metadata')->nullable();
             $table->timestamps();
 
-            // Menambahkan index manual pada foreign key untuk performa
             $table->index('anp_analysis_id');
         });
     }

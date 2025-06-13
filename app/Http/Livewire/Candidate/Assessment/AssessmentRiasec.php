@@ -344,17 +344,14 @@ class AssessmentRiasec extends Component
             if ($this->timeLimitMinutes) {
                 $timeSpentSeconds = min($timeSpentSeconds, $this->timeLimitMinutes * 60);
             }
-
-            // UPDATED: Tidak lagi menyimpan result_summary untuk RIASEC
             $this->progress->update([
                 'status' => 'completed', 
-                'score' => null, // RIASEC tidak memiliki skor numerik tunggal
-                'result_summary' => null, // UPDATED: Set null, data disimpan di tabel terpisah
+                'score' => null, 
+                'result_summary' => null,
                 'completed_at' => now(), 
                 'time_spent_seconds' => $timeSpentSeconds
             ]);
             
-            // NEW: Simpan skor detail RIASEC ke tabel terpisah
             $scoringService->saveRiasecDetailedScores($user, $scoreResult);
             
             $session = TestSession::where('user_id', $user->id)

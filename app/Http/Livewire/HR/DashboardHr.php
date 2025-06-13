@@ -8,7 +8,7 @@ use App\Models\UserTestProgress;
 use App\Models\AnpAnalysis;
 use App\Models\JobPosition;
 use App\Models\UserMbtiScore;
-use App\Models\UserRiasecScore; // Pastikan model ini di-import
+use App\Models\UserRiasecScore;
 use Livewire\Component;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +19,6 @@ class DashboardHr extends Component
     public $topCandidates = [];
     public $recentAnalyses = [];
     
-    // Data untuk Chart.js
     public array $mbtiLabels = [];
     public array $mbtiData = [];
     public array $mbtiColors = [];
@@ -73,9 +72,6 @@ class DashboardHr extends Component
         ];
     }
 
-    /**
-     * PERBAIKAN: Tambahkan ->values() untuk mereset key collection
-     */
     public function loadTopCandidates(): void
     {
         $this->topCandidates = User::where('role', User::ROLE_CANDIDATE)
@@ -98,7 +94,7 @@ class DashboardHr extends Component
             })
             ->sortByDesc('average_score')
             ->take(5)
-            ->values(); // <-- TAMBAHKAN BARIS INI
+            ->values();
     }
     
     public function loadRecentAnalyses(): void

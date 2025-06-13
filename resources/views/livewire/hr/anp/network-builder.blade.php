@@ -7,7 +7,6 @@
         <div class="card-body">
             <x-anp-stepper currentStep="2" />
 
-            <!-- PERUBAHAN: Tambahkan panduan langkah demi langkah -->
             <div class="alert alert-info text-white mb-4">
                 <h6 class="text-white mb-2"><i class="material-icons text-sm align-middle">lightbulb</i> Panduan Pembuatan Jaringan ANP</h6>
                 <ol class="mb-0 ps-3">

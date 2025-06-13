@@ -1,6 +1,5 @@
-{{-- File: resources/views/livewire/candidate/assessment/assessment-prerequisite-failed.blade.php --}}
 <div>
-    <div class="card shadow-sm border-warning my-5"> {{-- Menggunakan border-warning untuk indikasi --}}
+    <div class="card shadow-sm border-warning my-5">
         <div class="card-body text-center p-lg-5 p-4">
             <div class="mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="currentColor" class="bi bi-exclamation-triangle-fill text-warning" viewBox="0 0 16 16">

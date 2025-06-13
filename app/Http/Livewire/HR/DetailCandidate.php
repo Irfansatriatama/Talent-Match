@@ -21,7 +21,7 @@ class DetailCandidate extends Component
         $this->candidate = $candidate->load([
             'testProgress.test', 
             'latestMbtiScore',
-            'latestRiasecScore', // PERBAIKAN: Load relasi RIASEC score
+            'latestRiasecScore', 
             'jobPosition'
         ]);
         
@@ -42,17 +42,13 @@ class DetailCandidate extends Component
             if ($progress) {
                 $summary = $progress->result_summary;
                 
-                // PERBAIKAN: Handling khusus untuk RIASEC dan MBTI dari tabel terpisah
                 if ($test->test_type === 'riasec' && $progress->status === 'completed') {
-                    // Cek apakah ada data di tabel user_riasec_scores
                     if ($this->candidate->latestRiasecScore) {
                         $summary = $this->candidate->latestRiasecScore->riasec_code;
                     } else {
-                        // Fallback ke result_summary jika data belum migrasi
                         $summary = $progress->result_summary;
                     }
                 } elseif ($test->test_type === 'mbti' && $progress->status === 'completed') {
-                    // Handling untuk MBTI tetap sama
                     if (!$this->candidate->relationLoaded('latestMbtiScore')) {
                         $this->candidate->load('latestMbtiScore');
                     }

@@ -40,9 +40,7 @@
         </div>
     </div>
     
-    {{-- Area Notifikasi Modal & Session Flash --}}
     <div id="notification-area-mbti" class="mb-3">
-        {{-- MODAL UNTUK NOTIFIKASI SOAL BELUM DIJAWAB --}}
         @if ($showUnansweredQuestionsModal && $submissionErrorMessage)
         <div class="modal fade show" id="unansweredQuestionsModalMbti" tabindex="-1" aria-labelledby="unansweredModalLabelMbti" 
              style="display: block; background-color: rgba(0,0,0,0.6);" aria-modal="true" role="dialog">
@@ -68,9 +66,7 @@
             </div>
         </div>
         @endif
-        {{-- AKHIR MODAL --}}
 
-        {{-- Notifikasi dari session() akan muncul di sini setelah redirect --}}
         @if (session()->has('error'))
             <div class="alert alert-danger text-white alert-dismissible fade show" role="alert">
                 <span class="alert-text d-flex align-items-center"><i class="material-icons text-white me-2">error_outline</i><strong>Error!</strong>&nbsp; {{ session('error') }}</span>
@@ -92,10 +88,6 @@
                 <div class="card mb-4 question-item" id="question-card-{{ $question->question_id }}">
                     <div class="card-body p-3 p-md-4">
                         <p class="font-weight-bold text-sm mb-3 text-center">Activity {{ $index + 1 }}</p>
-                        {{-- Untuk MBTI, question_text di model Question bisa berisi instruksi umum --}}
-                        {{-- seperti "Pilih pernyataan yang lebih menggambarkan diri Anda:" --}}
-                        {{-- Karena tiap opsi adalah pernyataan itu sendiri. --}}
-                        {{-- Jika question_text di seeder Anda kosong untuk MBTI, baris di bawah ini bisa dikomentari --}}
                         @if($question->question_text !== 'Pilih pernyataan yang paling menggambarkan diri Anda:')
                             <h6 class="font-weight-bolder mb-4 text-center text-gray-700">{{ $question->question_text }}</h6>
                         @endif
@@ -106,7 +98,6 @@
                                 $optionB = $question->options[1];
                             @endphp
 
-                            {{-- Opsi A --}}
                             <div wire:click="selectAnswer({{ $question->question_id }}, {{ $optionA->option_id }})"
                                  class="form-check card card-body shadow-xs border mb-3 p-3 p-md-4 cursor-pointer option-box mbti-option
                                         {{ ($userAnswers[$question->question_id] ?? null) == $optionA->option_id ? 'active-option border-primary bg-gradient-primary text-white' : 'border-light hover-shadow-sm' }}">
@@ -119,7 +110,6 @@
                                 </label>
                             </div>
 
-                            {{-- Opsi B --}}
                             <div wire:click="selectAnswer({{ $question->question_id }}, {{ $optionB->option_id }})"
                                  class="form-check card card-body shadow-xs border mb-3 p-3 p-md-4 cursor-pointer option-box mbti-option
                                         {{ ($userAnswers[$question->question_id] ?? null) == $optionB->option_id ? 'active-option border-primary bg-gradient-primary text-white' : 'border-light hover-shadow-sm' }}">

@@ -77,7 +77,7 @@
                 </div>
                 <hr class="dark horizontal my-0">
                 <div class="card-footer p-3">
-                    <p class="mb-0 text-sm">Programming Test</p>
+                    <p class="mb-0 text-sm">Programming Asesmen</p>
                 </div>
             </div>
         </div>
@@ -132,7 +132,6 @@
                     <p class="text-sm">Kandidat dengan performa terbaik di semua tes</p>
                 </div>
                 <div class="card-body px-0 pb-2">
-                    {{-- PERBAIKAN: Membungkus table dengan div scrollable --}}
                     <div style="max-height: 400px; overflow-y: auto;">
                         <div class="table-responsive">
                             <table class="table align-items-center mb-0">
@@ -190,7 +189,6 @@
             </div>
         </div>
 
-        {{-- ANALISIS ANP TERBARU (DENGAN SCROLLABLE CONTENT) --}}
         <div class="col-lg-5">
             <div class="card h-100">
                 <div class="card-header pb-0">
@@ -198,7 +196,6 @@
                     <p class="text-sm">5 analisis terakhir yang dibuat</p>
                 </div>
                 <div class="card-body p-3">
-                    {{-- PERBAIKAN: Membungkus content dengan div scrollable --}}
                     <div style="max-height: 400px; overflow-y: auto;">
                         @forelse ($recentAnalyses as $analysis)
                             <div class="card mb-3 border">
@@ -208,9 +205,7 @@
                                             <h6 class="mb-1 text-sm">{{ $analysis->name }}</h6>
                                             <p class="text-xs text-muted mb-2">
                                                 <i class="material-icons text-sm align-middle">work</i> 
-                                                {{ $analysis->jobPosition->name ?? 'N/A' }}
                                             </p>
-                                            {{-- AVATAR GRUP KANDIDAT --}}
                                             <div class="avatar-group">
                                                 @foreach($analysis->candidates->take(3) as $candidate)
                                                     <a href="#" class="avatar avatar-xs rounded-circle" 
@@ -250,7 +245,6 @@
                                             </p>
                                         </div>
                                     </div>
-                                    {{-- TOMBOL AKSI --}}
                                     <div class="mt-2">
                                         @if($analysis->status == 'completed')
                                             <a href="{{ route('hr.anp.analysis.show', $analysis->id) }}" 
@@ -283,7 +277,6 @@
     </div>
 </div>
 
-{{-- SCRIPT UNTUK CHART.JS --}}
 @push('js')
 <script src="{{ asset('assets') }}/js/plugins/chartjs.min.js"></script>
 <script>

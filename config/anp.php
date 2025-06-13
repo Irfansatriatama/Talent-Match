@@ -8,7 +8,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | File ini berisi nilai-nilai konfigurasi yang digunakan dalam berbagai
-    | tahap perhitungan ANP pada sistem Talent Match Anda.
+    | tahap perhitungan ANP pada sistem Talent Match.
     |
     */
 
@@ -34,9 +34,7 @@ return [
         12 => 1.48,  // Beberapa sumber menggunakan 1.53 atau 1.54
         13 => 1.56,
         14 => 1.57,
-        15 => 1.59,  // Beberapa sumber menggunakan 1.58
-        // Jika Anda memerlukan untuk n > 15, Anda bisa menambahkannya di sini
-        // atau service Anda bisa menggunakan nilai RI terakhir (1.59) sebagai aproksimasi.
+        15 => 1.59,  
     ],
 
     /**
@@ -65,22 +63,5 @@ return [
          */
         'tolerance' => 0.00001, // (1.0e-5)
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Pengaturan Default Tambahan (Opsional)
-    |--------------------------------------------------------------------------
-    |
-    | Anda bisa menambahkan pengaturan lain di sini jika diperlukan di masa mendatang.
-    | Misalnya, default label untuk 'Goal' jika tidak diambil dari JobPosition, dll.
-    |
-    */
-    // 'default_goal_label' => 'Pemilihan Kandidat Terbaik',
-
-    // 'supermatrix_element_ordering' => [
-    //     // Cara default untuk mengurutkan elemen dalam supermatrix jika diperlukan
-    //     // misalnya 'elements_first', 'alternatives_first'
-    //     // Ini biasanya ditangani secara dinamis oleh service, tapi bisa jadi ada default.
-    // ],
 
 ];

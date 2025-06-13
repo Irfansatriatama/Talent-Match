@@ -28,13 +28,13 @@ class UserRiasecScore extends Model
      */
     protected $fillable = [
         'user_id',
-        'r_score',      // Realistic score
-        'i_score',      // Investigative score
-        'a_score',      // Artistic score
-        's_score',      // Social score
-        'e_score',      // Enterprising score
-        'c_score',      // Conventional score
-        'riasec_code',  // 3-letter RIASEC code (e.g., 'RIA')
+        'r_score', 
+        'i_score',   
+        'a_score',  
+        's_score',    
+        'e_score',   
+        'c_score',    
+        'riasec_code',
         'calculated_at'
     ];
 
@@ -53,16 +53,13 @@ class UserRiasecScore extends Model
         'calculated_at' => 'datetime'
     ];
 
-    /**
-     * Get the user that owns the RIASEC score.
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
     /**
-     * Get the dominant RIASEC type (first letter of the code).
+     * 
      *
      * @return string|null
      */
@@ -72,7 +69,7 @@ class UserRiasecScore extends Model
     }
 
     /**
-     * Get all scores as an array.
+     * 
      *
      * @return array
      */

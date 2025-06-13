@@ -3,14 +3,14 @@
 namespace App\Http\Livewire;
 
 use App\Models\User;
-use App\Models\JobPosition; // Tambahkan ini
+use App\Models\JobPosition;
 use Livewire\Component;
 use Illuminate\Validation\Rule;
 
 class UserProfile extends Component
 {
     public User $user;
-    public $jobPositions; // Hapus type-hint array karena sekarang collection
+    public $jobPositions; 
 
     protected function rules()
     {
@@ -26,8 +26,6 @@ class UserProfile extends Component
     public function mount()
     {
         $this->user = auth()->user();
-        // --- PERBAIKAN PENGAMBILAN DATA ---
-        // Ambil daftar posisi dari tabel job_positions di database
         $this->jobPositions = JobPosition::orderBy('name')->get();
         $this->jobPositions = JobPosition::all();
     }

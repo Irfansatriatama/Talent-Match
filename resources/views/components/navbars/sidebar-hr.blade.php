@@ -12,7 +12,6 @@
     <hr class="horizontal light mt-0 mb-2">
     <div class="collapse navbar-collapse w-auto h-auto" id="sidenav-collapse-main">
         <ul class="navbar-nav">
-            <!-- PERUBAHAN: Konsistensi struktur dan alignment untuk semua item -->
             <li class="nav-item">
                 <a class="nav-link text-white d-flex align-items-center {{ Route::currentRouteName() == 'hr.dashboard' ? ' active bg-gradient-primary' : '' }}"
                     href="{{ route('hr.dashboard') }}">
@@ -41,7 +40,7 @@
                 <a class="nav-link text-white d-flex align-items-center {{ Route::currentRouteName() == 'hr.candidates' ? ' active bg-gradient-primary' : '' }}"
                     href="{{ route('hr.candidates') }}">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                        <i class="material-icons opacity-10">people</i> <!-- PERUBAHAN: Ganti icon untuk konsistensi -->
+                        <i class="material-icons opacity-10">people</i> 
                     </div>
                     <span class="nav-link-text ms-1">Candidate</span>
                 </a>
@@ -51,7 +50,7 @@
                 <a class="nav-link text-white d-flex align-items-center {{ Route::currentRouteName() == 'hr.settings' ? ' active bg-gradient-primary' : '' }}"
                     href="{{ route('hr.settings') }}">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                        <i class="material-icons opacity-10">settings</i> <!-- PERUBAHAN: Gunakan material icons -->
+                        <i class="material-icons opacity-10">settings</i> 
                     </div>
                     <span class="nav-link-text ms-1">Setting</span>
                 </a>
@@ -80,7 +79,6 @@
         </ul>
     </div>
     
-    <!-- PERUBAHAN: CSS untuk konsistensi alignment -->
     <style>
         .sidenav .navbar-nav .nav-link {
             padding: 0.5rem 1rem;

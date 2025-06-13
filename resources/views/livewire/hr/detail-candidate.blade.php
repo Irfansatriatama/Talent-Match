@@ -49,7 +49,6 @@
                     </div>
                     <div class="card-body p-3">
                         <ul class="list-group">
-                             {{-- --- PERBAIKAN: Looping dan Tampilan Hasil Tes --- --}}
                             @forelse ($testResults as $testName => $result)
                             <li class="list-group-item border-0 d-flex p-4 mb-2 bg-gray-100 border-radius-lg">
                                 <div class="d-flex flex-column">

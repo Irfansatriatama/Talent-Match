@@ -14,22 +14,20 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        // Membuat user admin default (opsional, bisa juga dari UserSeeder terpisah)
         User::factory()->create([
-            'name' => 'Admin HR', // Ubah sesuai kebutuhan
-            'email' => 'hr@talentmatch.app', // Ubah sesuai kebutuhan
-            'password' => bcrypt('password'), // 'password' adalah contoh, ganti dengan password aman
-            'role' => User::ROLE_HR, //
+            'name' => 'Admin HR', 
+            'email' => 'hr@talentmatch.app', 
+            'password' => bcrypt('password'), 
+            'role' => User::ROLE_HR, 
         ]);
 
         User::factory()->create([
-            'name' => 'Candidate User', // Ubah sesuai kebutuhan
-            'email' => 'candidate@talentmatch.app', // Ubah sesuai kebutuhan
+            'name' => 'Candidate User',
+            'email' => 'candidate@talentmatch.app', 
             'password' => bcrypt('password'),
-            'role' => User::ROLE_CANDIDATE, //
+            'role' => User::ROLE_CANDIDATE, 
         ]);
         
-        // Memanggil seeder lain yang sudah Anda buat
         $this->call([
             JobPositionsSeeder::class,
             AnpDefaultNetworkStructuresSeeder::class,

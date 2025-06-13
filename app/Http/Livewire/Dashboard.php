@@ -18,7 +18,6 @@ class Dashboard extends Component
     public string $progressMessage = '';
     public array $testsList = [];
     
-    // UPDATED: Properties untuk kontrol notifikasi
     public bool $isProfileComplete = false; 
     public bool $showProfileCompletionNotice = true;
     public bool $showTutorial = false;
@@ -35,10 +34,8 @@ class Dashboard extends Component
         }
         $this->userName = $user->name;
 
-        // UPDATED: Logika pemeriksaan kelengkapan profil yang lebih baik
         $this->checkProfileCompleteness($user);
         
-        // NEW: Check if user is new (created within last 7 days or hasn't completed any test)
         $this->checkIfNewUser($user);
 
         $allTests = Test::orderBy('test_order')->get();
@@ -74,7 +71,7 @@ class Dashboard extends Component
                     'order' => $test->test_order,
                     'status_internal' => $status,
                     'score' => ($progress && $currentTestType === 'programming') ? $progress->score : null,
-                    'result_summary' => null, // UPDATED: Tidak lagi menggunakan result_summary
+                    'result_summary' => null, 
                     'test_type' => $currentTestType,
                     'icon' => $this->getTestIcon($currentTestType),
                     'can_start' => false,
@@ -86,7 +83,6 @@ class Dashboard extends Component
                     'prerequisite_message' => null,
                 ];
                 
-                // NEW: Load actual results from dedicated tables
                 if ($status === 'completed') {
                     if ($currentTestType === 'riasec') {
                         $riasecScore = $user->latestRiasecScore;
@@ -183,13 +179,9 @@ class Dashboard extends Component
         }
     }
 
-    /**
-     * PERBAIKAN: Kirim event browser untuk membuka tutorial.
-     */
     public function showTutorialManually(): void
     {
-        // $this->showTutorial = true; // Baris ini tidak lagi efektif setelah halaman dimuat.
-        $this->dispatch('open-tutorial'); // Perintah ini mengirim event 'open-tutorial' ke browser.
+        $this->dispatch('open-tutorial'); 
     }
 
     private function getTestIcon(string $testType): string

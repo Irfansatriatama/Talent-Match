@@ -12,8 +12,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('anp_analysis_id')->constrained('anp_analyses')->onDelete('cascade');
             $table->foreignId('anp_dependency_id')->constrained('anp_dependencies')->onDelete('cascade');
-            $table->json('comparison_data'); // Menyimpan matriks dan ID elemen sumber yang dibandingkan
-            $table->json('priority_vector')->nullable(); // Hasil perhitungan eigenvector
+            $table->json('comparison_data'); 
+            $table->json('priority_vector')->nullable(); 
             $table->timestamps();
         });
     }

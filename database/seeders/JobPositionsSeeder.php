@@ -9,16 +9,14 @@ use Illuminate\Support\Facades\DB;
 class JobPositionsSeeder extends Seeder
 {
     /**
-     * Menjalankan proses seeding untuk database.
+     * 
      *
      * @return void
      */
     public function run(): void
     {
-        // 1. Kosongkan tabel terlebih dahulu untuk menghindari duplikasi data jika seeder dijalankan ulang.
         DB::table('job_positions')->delete();
 
-        // 2. Definisikan data posisi pekerjaan yang akan dimasukkan.
         $jobPositions = [
             [
                 'name' => 'Software Developer',
@@ -46,14 +44,10 @@ class JobPositionsSeeder extends Seeder
             ],
         ];
 
-        // 3. Lakukan iterasi dan masukkan setiap data ke dalam database menggunakan model JobPosition.
-        // Model akan secara otomatis mengubah array 'ideal_...' menjadi format JSON karena properti '$casts' di dalamnya.
         foreach ($jobPositions as $positionData) {
-            // updateOrCreate akan mencari baris dengan 'name' yang sama.
-            // Jika ketemu, akan di-update. Jika tidak, akan dibuat baru.
             JobPosition::updateOrCreate(
-                ['name' => $positionData['name']], // Kondisi pencarian
-                $positionData  // Data untuk di-update atau di-create
+                ['name' => $positionData['name']], 
+                $positionData 
             );
         }
     }

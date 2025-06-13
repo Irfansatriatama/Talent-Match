@@ -5,7 +5,6 @@
             <p class="text-sm">Bandingkan setiap kandidat berdasarkan kriteria yang dipilih.</p>
         </div>
         <div class="card-body">
-            {{-- IMPLEMENTASI KOMPONEN STEPPER --}}
             <x-anp-stepper currentStep="3" />
 
             {{-- KONTEKS PERBANDINGAN --}}
@@ -77,14 +76,12 @@
                                         <td class="p-1 align-middle" wire:key="cell-{{ $rowElement->id }}-{{ $colElement->id }}">
                                             <div class="input-group input-group-outline">
                                                 @if ($rowElement->id == $colElement->id)
-                                                    {{-- Diagonal cells are always 1 --}}
                                                     <input type="text" 
                                                         class="form-control form-control-sm text-center bg-light" 
                                                         value="1" 
                                                         readonly 
                                                         disabled>
                                                 @else
-                                                    {{-- All non-diagonal cells are editable --}}
                                                     <input type="number" 
                                                         step="any" 
                                                         min="0.11" 
@@ -115,14 +112,11 @@
                     </div>
                 </div>
 
-                {{-- AREA BAWAH: 2 KOLOM --}}
                 <div class="row">
-                    {{-- KOLOM KIRI: PANDUAN SKALA SAATY --}}
                     <div class="col-lg-5">
                         <x-saaty-scale-guide />
                     </div>
 
-                    {{-- KOLOM KANAN: HASIL KALKULASI & AKSI --}}
                     <div class="col-lg-7">
                         <div class="card bg-gray-100">
                             <div class="card-header pb-2">

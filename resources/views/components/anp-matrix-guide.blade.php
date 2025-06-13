@@ -1,7 +1,5 @@
-{{-- PERBAIKAN: Menambahkan Alpine.js untuk fungsionalitas collapse --}}
-<div class="col-lg-12 mb-4" x-data="{ open: true }"> {{-- PERBAIKAN: x-data untuk state open/close, default terbuka --}}
+<div class="col-lg-12 mb-4" x-data="{ open: true }"> 
     <div class="card border-0 shadow-sm">
-        {{-- PERBAIKAN: Header dapat diklik untuk toggle open/close --}}
         <div class="card-header bg-gradient-info text-white" 
              @click="open = !open" 
              style="cursor: pointer;">
@@ -10,12 +8,10 @@
                     <i class="material-icons text-sm align-middle">help_outline</i> 
                     Panduan Perbandingan Berpasangan
                 </span>
-                {{-- PERBAIKAN: Ikon dinamis berubah sesuai state --}}
                 <i class="material-icons text-sm" x-text="open ? 'expand_less' : 'expand_more'">expand_less</i>
             </h6>
         </div>
         
-        {{-- PERBAIKAN: Body dibungkus dengan x-show dan x-collapse untuk animasi --}}
         <div x-show="open" x-collapse>
             <div class="card-body">
                 <!-- Cara Membaca Matriks -->
@@ -116,8 +112,3 @@
         </div>
     </div>
 </div>
-
-{{-- PERBAIKAN: Tambahkan Alpine.js jika belum ada di layout --}}
-@push('js')
-<script src="//unpkg.com/alpinejs" defer></script>
-@endpush

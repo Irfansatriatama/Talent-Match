@@ -159,7 +159,7 @@ class NetworkBuilder extends Component
             'description' => $this->dependencyDescription,
         ]);
         $this->reset(['sourceType', 'sourceId', 'targetType', 'targetId', 'dependencyDescription']);
-        $this->sourceType = 'element'; $this->targetType = 'element'; // Reset ke default
+        $this->sourceType = 'element'; $this->targetType = 'element'; 
         $this->loadNetworkData();
         $this->dispatch('notify', ['message' => 'Dependensi berhasil ditambahkan.', 'type' => 'success']);
     }

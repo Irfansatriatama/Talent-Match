@@ -46,12 +46,12 @@
         transition: all 0.3s ease;
     }
     .step.active .step-icon {
-        background-color: #e33674; /* Warna pink dari tema Anda */
+        background-color: #e33674;
         color: #fff;
         border-color: #e33674;
     }
     .step.completed .step-icon {
-        background-color: #4CAF50; /* Warna hijau untuk selesai */
+        background-color: #4CAF50;
         color: #fff;
         border-color: #4CAF50;
     }

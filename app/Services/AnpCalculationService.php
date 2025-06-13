@@ -543,14 +543,21 @@ class AnpCalculationService
     
     private function calculateLimitSupermatrix(array $matrix): array
     {
-        if (empty($matrix)) throw new Exception('Matrix for limit calculation is empty.');
+        if (empty($matrix)) {
+            throw new Exception('Matrix for limit calculation is empty.');
+        }
         
+        $n = count($matrix);
         $limitMatrix = $matrix;
-        for ($i = 0; $i < $this->maxIterations; $i++) {
+        
+        // Inisialisasi matriks untuk deteksi siklus
+        $previousMatrixForCycleCheck = $matrix;
+
+        for ($iteration = 0; $iteration < $this->maxIterations; $iteration++) {
             $poweredMatrix = $this->multiplyMatrix($limitMatrix, $limitMatrix);
             
+            // Cek konvergensi standar (perbedaan dengan iterasi sebelumnya)
             $diff = 0;
-            $n = count($matrix);
             for ($r = 0; $r < $n; $r++) {
                 for ($c = 0; $c < $n; $c++) {
                     $diff += abs($poweredMatrix[$r][$c] - $limitMatrix[$r][$c]);
@@ -558,9 +565,38 @@ class AnpCalculationService
             }
 
             $limitMatrix = $poweredMatrix;
+
             if ($diff < $this->convergenceTolerance) {
-                Log::info("Limit supermatrix converged after " . ($i + 1) . " iterations.");
+                Log::info("Limit supermatrix converged after " . ($iteration + 1) . " iterations.");
                 return $limitMatrix;
+            }
+            
+            // --- PENAMBAHAN: Logika untuk deteksi dan penanganan siklus ---
+            // Cek secara periodik setelah beberapa iterasi awal
+            if ($iteration > 10 && $iteration % 2 != 0) {
+                $cycleDiff = 0;
+                for ($r = 0; $r < $n; $r++) {
+                    for ($c = 0; $c < $n; $c++) {
+                        $cycleDiff += abs($poweredMatrix[$r][$c] - $previousMatrixForCycleCheck[$r][$c]);
+                    }
+                }
+                
+                if ($cycleDiff < $this->convergenceTolerance) {
+                    Log::warning("Detected cyclic behavior. Averaging the cycle to stabilize.");
+                    // Ambil rata-rata dari dua matriks dalam siklus untuk menstabilkan
+                    for ($r = 0; $r < $n; $r++) {
+                        for ($c = 0; $c < $n; $c++) {
+                            $limitMatrix[$r][$c] = ($poweredMatrix[$r][$c] + $limitMatrix[$r][$c]) / 2;
+                        }
+                    }
+                    // Keluar dari loop karena sudah stabil
+                    return $limitMatrix;
+                }
+            }
+            
+            // --- PENAMBAHAN: Simpan matriks untuk perbandingan siklus berikutnya ---
+            if ($iteration % 2 == 0) {
+                $previousMatrixForCycleCheck = $poweredMatrix;
             }
         }
 

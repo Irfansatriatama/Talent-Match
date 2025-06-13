@@ -1,6 +1,5 @@
-{{-- File: resources/views/livewire/candidate/assessment/assessment-error.blade.php --}}
 <div>
-    <div class="card shadow-sm border-danger my-5"> {{-- Menggunakan border-danger untuk indikasi error --}}
+    <div class="card shadow-sm border-danger my-5">
         <div class="card-body text-center p-lg-5 p-4">
             <div class="mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" fill="currentColor" class="bi bi-x-octagon-fill text-danger" viewBox="0 0 16 16">

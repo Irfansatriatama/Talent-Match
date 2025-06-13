@@ -4,7 +4,6 @@
 
 @section('content')
 <div class="container-fluid py-4">
-    {{-- Judul Halaman --}}
     <h1 class="h3 mb-2 text-gray-800">Hasil Akhir Analisis ANP</h1>
     <p class="mb-4">
         Peringkat kandidat untuk analisis <strong>"{{ $anpAnalysis->name }}"</strong> 
@@ -31,7 +30,6 @@
                                         <th style="width: 10%;">Peringkat</th>
                                         <th>Nama Kandidat</th>
                                         <th style="width: 20%;">Skor Global</th>
-                                        {{-- ▼▼▼ 1. TAMBAHKAN KOLOM HEADER BARU ▼▼▼ --}}
                                         <th style="width: 15%;">Aksi</th>
                                     </tr>
                                 </thead>
@@ -50,7 +48,6 @@
                                             <td class="align-middle">{{ $result->candidate->name }}</td>
                                             <td class="text-center font-weight-bold align-middle">{{ number_format($result->score, 5) }}</td>
                                             
-                                            {{-- ▼▼▼ 2. TAMBAHKAN KOLOM AKSI DENGAN TOMBOL DETAIL ▼▼▼ --}}
                                             <td class="text-center align-middle">
                                                 <a href="{{ route('hr.detail-candidate', ['candidate' => $result->candidate->id]) }}" class="btn btn-sm btn-info mb-0">
                                                     Lihat Detail

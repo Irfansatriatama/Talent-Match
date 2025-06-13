@@ -1,7 +1,5 @@
-{{-- File resources/views/layouts/app.blade.php atau nama file layout utama Anda --}}
 <x-layouts.base>
     @if (in_array(request()->route()->getName(),['static-sign-in', 'static-sign-up', 'register', 'login','password.forgot','reset-password']))
-        {{-- Layout untuk halaman otentikasi --}}
         <div class="container position-sticky z-index-sticky top-0">
             <div class="row">
                 <div class="col-12">
@@ -20,15 +18,13 @@
         @endif
 
     @else
-        {{-- Layout untuk pengguna yang sudah login --}}
-        @auth {{-- Pastikan pengguna sudah login sebelum memeriksa peran --}}
+        @auth 
             @if (auth()->user()->role == 'hr')
-                <x-navbars.sidebar-hr /> {{-- Tampilkan sidebar HR --}}
+                <x-navbars.sidebar-hr /> 
             @elseif (auth()->user()->role == 'candidate')
-                <x-navbars.sidebar /> {{-- Tampilkan sidebar Candidate --}}
+                <x-navbars.sidebar /> 
             @else
-                {{-- Fallback jika peran tidak diketahui atau untuk peran lain --}}
-                <x-navbars.sidebar /> {{-- Sidebar default jika ada --}}
+                <x-navbars.sidebar /> 
             @endif
         @endauth
 
@@ -36,19 +32,11 @@
             <x-navbars.navs.auth :pageTitle="$pageTitle ?? 'Page'" />
             
             <div class="container-fluid py-4">
-                {{-- ▼▼▼ INI SOLUSI UTAMANYA ▼▼▼ --}}
                 @if (isset($slot))
-                    {{-- Jika layout ini dipanggil sebagai komponen <x-layouts.app> --}}
-                    {{-- (misalnya oleh Livewire Full-page seperti Dashboard HR), --}}
-                    {{-- maka $slot akan ada isinya. Tampilkan slot tersebut. --}}
                     {{ $slot }}
                 @else
-                    {{-- Jika layout ini dipanggil menggunakan @extends('layouts.app'), --}}
-                    {{-- (misalnya oleh halaman dari Controller seperti show, network-definition), --}}
-                    {{-- maka $slot tidak ada, dan kita gunakan @yield. --}}
                     @yield('content')
                 @endif
-                {{-- ▲▲▲ AKHIR DARI SOLUSI ▲▲▲ --}}
             </div>
 
             <x-footers.auth />

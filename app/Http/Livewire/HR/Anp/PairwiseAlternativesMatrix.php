@@ -150,21 +150,16 @@ class PairwiseAlternativesMatrix extends Component
 
     public function updatedMatrixValues($value, $key)
     {
-        // Parse the key to get row and column IDs
         [$rowId, $colId] = explode('.', $key);
         
-        // Skip if this is a diagonal element (always 1)
         if ($rowId == $colId) {
             $this->matrixValues[$rowId][$colId] = 1;
             return;
         }
         
-        // Convert input value to float
         $floatValue = (float) $value;
         
-        // Validation: ensure value is within valid range
         if ($floatValue < 0.11 || $floatValue > 9) {
-            // Reset to previous value or default
             if (!isset($this->matrixValues[$rowId][$colId])) {
                 $this->matrixValues[$rowId][$colId] = 1;
             }
@@ -172,27 +167,20 @@ class PairwiseAlternativesMatrix extends Component
             return;
         }
         
-        // Clear any previous errors for this field
         $this->resetErrorBag("matrixValues.{$rowId}.{$colId}");
         $this->resetErrorBag("matrixValues.{$colId}.{$rowId}");
         
-        // Update the current cell
         $this->matrixValues[$rowId][$colId] = $floatValue;
         
-        // Calculate and update the reciprocal cell
         if ($floatValue > 0) {
             $reciprocalValue = round(1 / $floatValue, 4);
             $this->matrixValues[$colId][$rowId] = $reciprocalValue;
         }
-        
-        // Reset calculation results since matrix has changed
         $this->consistencyRatio = null;
         $this->isConsistent = null;
         $this->priorityVector = [];
         $this->calculationResult = null;
         
-        // Optional: Auto-calculate consistency after each change (can be disabled for performance)
-        // $this->recalculateConsistency();
     }
 
     protected function validateMatrix(): bool
@@ -264,6 +252,7 @@ class PairwiseAlternativesMatrix extends Component
             $this->dispatch('notify', ['message' => $message, 'type' => $this->isConsistent ? 'success' : 'error']);
         }
     }
+
 
     public function saveComparisons()
     {

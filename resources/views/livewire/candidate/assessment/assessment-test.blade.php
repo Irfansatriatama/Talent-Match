@@ -44,7 +44,6 @@
             @else
                 @foreach ($test_statuses_list as $item)
                     <div class="col-xl-4 col-md-6 mb-4">
-                        {{-- TAMBAHKAN d-flex flex-column PADA KARTU --}}
                         <div class="card h-100 card-hoverable d-flex flex-column @if(!$item['can_start'] && $item['status'] === 'not_started') bg-light-subtle @else bg-white @endif">
                             <div class="card-header p-3 pt-2">
                                 <div class="d-flex align-items-center">
@@ -74,15 +73,12 @@
                                 </div>
                             </div>
                             <hr class="dark horizontal my-0">
-                            {{-- TAMBAHKAN flex-grow-1 PADA CARD-BODY --}}
                             <div class="card-body pt-2 d-flex flex-column flex-grow-1">
                                 <p class="text-sm text-secondary mb-2" style="min-height: 54px; /* Sesuaikan dengan 3 baris x 18px (contoh) */ max-height: 54px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; line-height: 1.3;">
-                                    {{-- Str::limit untuk fallback jika -webkit-line-clamp tidak didukung sepenuhnya atau untuk data mentah --}}
                                     {{ Str::limit($item['description'], 120) }}
                                 </p>
                                 
-                                {{-- Bagian ini akan mendorong konten di bawahnya ke bawah jika card-body tumbuh --}}
-                                <div class="mt-auto"> {{-- Wrapper untuk konten yang ingin tetap di bawah dalam card-body jika ada flex-grow --}}
+                                <div class="mt-auto">
                                     @if ($item['time_limit_minutes'])
                                     <div class="d-flex align-items-center text-xs text-muted mb-2">
                                         <i class="material-icons text-sm me-1">timer</i>
@@ -111,7 +107,6 @@
                                     </div>
                                 </div>
                             </div>
-                            {{-- Card footer akan tetap di bawah karena card adalah flex-column dan card-body adalah flex-grow-1, atau style margin-top:auto dari CSS --}}
                             <div class="card-footer pt-0 p-3">
                                 @if ($item['status'] === 'completed')
                                     <button class="btn btn-sm btn-outline-success w-100 mb-0" disabled>

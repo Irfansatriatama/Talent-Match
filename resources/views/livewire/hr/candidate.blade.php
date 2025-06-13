@@ -10,7 +10,6 @@
                         </div>
                     </div>
 
-                    {{-- AREA FILTER YANG DIPERBAIKI DAN DITAMBAH --}}
                     <div class="row mt-3 gx-2">
                         {{-- Filter Pencarian --}}
                         <div class="col-lg-3 col-md-4 col-sm-6 mb-2">
@@ -116,13 +115,11 @@
                                     </td>
                                     <td class="align-middle text-center text-sm">
                                         <span class="badge badge-sm bg-gradient-info">
-                                            {{-- UPDATED: Ambil dari relasi riasecScore --}}
                                             {{ $riasecScore ? $riasecScore->riasec_code : '-' }}
                                         </span>
                                     </td>
                                     <td class="align-middle text-center text-sm">
                                         <span class="badge badge-sm bg-gradient-warning">
-                                            {{-- UPDATED: Ambil dari relasi mbtiScore --}}
                                             {{ $mbtiScore ? $mbtiScore->mbti_type : '-' }}
                                         </span>
                                     </td>

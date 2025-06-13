@@ -6,7 +6,7 @@ use App\Models\Test;
 use App\Models\User;
 use App\Models\UserAnswer;
 use App\Models\UserMbtiScore;
-use App\Models\UserRiasecScore; // NEW: Import model baru
+use App\Models\UserRiasecScore; 
 
 class TestScoringService
 {
@@ -66,13 +66,12 @@ class TestScoringService
         $top3 = array_slice(array_keys($dimensions), 0, 3);
         $code = implode('', $top3);
         
-        // UPDATED: Tidak lagi mengembalikan 'summary', tapi tetap sediakan untuk kompatibilitas
         return [
-            'summary' => $code, // Tetap ada untuk backward compatibility
-            'code' => $code,    // Kode RIASEC 3 huruf
+            'summary' => $code, 
+            'code' => $code,    
             'dimensions' => $dimensions,
             'top_3' => $top3,
-            'scores' => [       // NEW: Format untuk disimpan ke database
+            'scores' => [      
                 'r_score' => $dimensions['R'],
                 'i_score' => $dimensions['I'],
                 'a_score' => $dimensions['A'],
@@ -112,16 +111,15 @@ class TestScoringService
             if ($total > 0) {
                 $strengths[$dichotomy] = (max($poles) / $total) * 100;
             } else {
-                $strengths[$dichotomy] = 50; // Default jika tidak ada jawaban
+                $strengths[$dichotomy] = 50;
             }
             
             $rawScores[strtolower($dichotomy) . '_raw_' . strtolower(array_keys($poles)[0])] = $poles[array_keys($poles)[0]];
             $rawScores[strtolower($dichotomy) . '_raw_' . strtolower(array_keys($poles)[1])] = $poles[array_keys($poles)[1]];
         }
         
-        // UPDATED: Tidak lagi mengembalikan 'summary'
         return [
-            'summary' => $mbtiType, // Tetap ada untuk backward compatibility
+            'summary' => $mbtiType,
             'type' => $mbtiType,
             'strengths' => $strengths,
             'raw_scores' => $rawScores,
@@ -129,9 +127,6 @@ class TestScoringService
         ];
     }
     
-    /**
-     * NEW METHOD: Save RIASEC detailed scores to database
-     */
     public function saveRiasecDetailedScores(User $user, array $scoreData)
     {
         $data = [
@@ -146,16 +141,12 @@ class TestScoringService
             'calculated_at' => now()
         ];
         
-        // Gunakan updateOrCreate untuk menghindari duplikasi
         UserRiasecScore::updateOrCreate(
             ['user_id' => $user->id],
             $data
         );
     }
     
-    /**
-     * UPDATED METHOD: Improved MBTI score saving with updateOrCreate
-     */
     public function saveMbtiDetailedScores(User $user, array $scoreData)
     {
         $data = [
@@ -168,7 +159,6 @@ class TestScoringService
             'calculated_at' => now()
         ];
 
-        // Tambahkan skor detail dari detailed_scores
         if (isset($scoreData['detailed_scores'])) {
             $detailedScores = $scoreData['detailed_scores'];
             $data['ei_score_e'] = $detailedScores['EI']['E'] ?? 0;
@@ -181,7 +171,6 @@ class TestScoringService
             $data['jp_score_p'] = $detailedScores['JP']['P'] ?? 0;
         }
         
-        // UPDATED: Gunakan updateOrCreate untuk menghindari duplikasi
         UserMbtiScore::updateOrCreate(
             ['user_id' => $user->id],
             $data

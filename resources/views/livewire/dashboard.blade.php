@@ -1,7 +1,5 @@
-{{-- File: resources/views/livewire/dashboard.blade.php --}}
 <div class="container-fluid py-4">
 
-    {{-- UPDATED: Alert untuk Profil Belum Lengkap dengan kondisi yang diperbaiki --}}
     @if (Auth::check() && $showProfileCompletionNotice)
     <div class="row mb-4">
         <div class="col-12">
@@ -18,10 +16,9 @@
     </div>
     @endif
 
-    {{-- PERBAIKAN: Tambahkan listener @open-tutorial.window="open = true" --}}
     @if(Auth::check())
     <div x-data="{ open: @json($showTutorial), currentStep: 1, totalSteps: 4 }" 
-         @open-tutorial.window="open = true" {{-- TAMBAHKAN LISTENER INI --}}
+         @open-tutorial.window="open = true"
          x-show="open" 
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0 transform scale-90"
@@ -45,7 +42,6 @@
                         </button>
                     </div>
                     
-                    {{-- Step Navigation --}}
                     <div class="d-flex justify-content-center mb-4">
                         <template x-for="step in totalSteps" :key="step">
                             <div class="mx-1">
@@ -59,9 +55,7 @@
                         </template>
                     </div>
 
-                    {{-- Tutorial Content --}}
                     <div class="text-white">
-                        {{-- Step 1 --}}
                         <div x-show="currentStep === 1" x-transition>
                             <h5 class="text-white mb-3">Langkah 1: Lengkapi Profil Anda</h5>
                             <p class="mb-3">Sebelum memulai asesmen, pastikan profil Anda sudah lengkap:</p>
@@ -76,7 +70,6 @@
                             </a>
                         </div>
 
-                        {{-- Step 2 --}}
                         <div x-show="currentStep === 2" x-transition>
                             <h5 class="text-white mb-3">Langkah 2: Pahami Asesmen yang Akan Dijalani</h5>
                             <p class="mb-3">Anda akan menjalani 3 tes penting:</p>
@@ -91,7 +84,6 @@
                             </p>
                         </div>
 
-                        {{-- Step 3 --}}
                         <div x-show="currentStep === 3" x-transition>
                             <h5 class="text-white mb-3">Langkah 3: Kerjakan Asesmen Secara Berurutan</h5>
                             <p class="mb-3">Penting untuk diingat:</p>
@@ -107,7 +99,6 @@
                             </a>
                         </div>
 
-                        {{-- Step 4 --}}
                         <div x-show="currentStep === 4" x-transition>
                             <h5 class="text-white mb-3">Langkah 4: Tips Sukses</h5>
                             <p class="mb-3">Untuk hasil terbaik:</p>
@@ -205,11 +196,9 @@
 
             @foreach ($testsList as $test)
             <div class="col-md-12 mb-4">
-                {{-- Card background changes if test is locked (not startable and not completed) --}}
                 <div class="card @if($test['display_status_text'] === 'Terkunci' || ($test['status_internal'] === 'not_started' && !$test['can_start'])) bg-light @endif">
                     <div class="card-body p-3">
                         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
-                            {{-- Kolom Kiri: Ikon, Nama Tes, Deskripsi, Waktu --}}
                             <div class="mb-3 mb-md-0">
                                 <div class="d-flex align-items-center mb-1">
                                      <div class="icon icon-sm icon-shape text-center border-radius-md me-2 shadow-sm
@@ -228,7 +217,6 @@
                                 <p class="text-xs text-muted mb-0"><i class="material-icons text-sm align-middle">timer</i> Batas Waktu: {{ $test['time_limit_minutes'] }} menit</p>
                             </div>
 
-                            {{-- Kolom Kanan: Status Teks atau Tombol Aksi --}}
                             <div class="text-md-end">
                                 @if ($test['status_internal'] === 'completed')
                                     <span class="badge badge-sm bg-gradient-success me-2">

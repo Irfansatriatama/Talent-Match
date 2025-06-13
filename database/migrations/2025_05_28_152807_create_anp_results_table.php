@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::create('anp_results', function (Blueprint $table) {
             $table->id();
             $table->foreignId('anp_analysis_id')->constrained('anp_analyses')->onDelete('cascade');
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Candidate User ID
-            $table->float('score', 8, 5); // Sesuaikan presisi jika perlu
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); 
+            $table->float('score', 8, 5); 
             $table->integer('rank');
             $table->timestamps();
         });

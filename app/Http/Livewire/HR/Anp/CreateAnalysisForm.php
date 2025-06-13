@@ -21,10 +21,8 @@ class CreateAnalysisForm extends Component
     public $jobPositions = [];
     public $availableCandidates = [];
     
-    // Flag untuk menampilkan/menyembunyikan daftar kandidat
     public $showCandidateList = false;
     
-    // Variabel untuk debugging
     public $debugInfo = '';
     public $totalTests = 3;
 
@@ -48,7 +46,6 @@ class CreateAnalysisForm extends Component
         $this->jobPositions = JobPosition::orderBy('name')->get();
         $this->availableCandidates = collect();
         
-        // Hitung jumlah total tes yang ada
         $this->totalTests = Test::count() ?: 3;
         
         Log::info('CreateAnalysisForm mounted', [
@@ -57,18 +54,15 @@ class CreateAnalysisForm extends Component
         ]);
     }
     
-    // Hook untuk menangani perubahan pada job_position_id
     public function updatedJobPositionId($value)
     {
         Log::info('Job position updated', ['value' => $value]);
         
         if ($value) {
-            // Reset data sebelumnya
             $this->availableCandidates = collect();
             $this->selected_candidates = [];
             $this->debugInfo = '';
             
-            // Query untuk mendapatkan semua kandidat dengan posisi yang dipilih
             $allCandidatesQuery = User::where('role', User::ROLE_CANDIDATE)
                 ->where('job_position_id', $value);
             
@@ -78,8 +72,6 @@ class CreateAnalysisForm extends Component
                 'position_id' => $value,
                 'total_candidates' => $totalCandidatesForPosition
             ]);
-            
-            // Query kandidat yang sudah menyelesaikan semua tes
             $completedCandidatesQuery = User::where('role', User::ROLE_CANDIDATE)
                 ->where('job_position_id', $value)
                 ->with(['testProgress' => function($query) {
@@ -104,12 +96,10 @@ class CreateAnalysisForm extends Component
                 });
             
             $this->availableCandidates = $completedCandidatesQuery;
-            
-            // Tampilkan daftar kandidat
+        
             $this->showCandidateList = true;
             
         } else {
-            // Reset jika posisi tidak dipilih
             $this->showCandidateList = false;
             $this->availableCandidates = collect();
             $this->selected_candidates = [];
@@ -122,11 +112,9 @@ class CreateAnalysisForm extends Component
         $this->validate();
 
         try {
-            // Cek apakah ada struktur jaringan default
             $defaultStructure = AnpNetworkStructure::first();
 
             if (!$defaultStructure) {
-                // Buat struktur default jika belum ada
                 $defaultStructure = AnpNetworkStructure::create([
                     'name' => 'Default ANP Structure',
                     'description' => 'Struktur jaringan default untuk analisis ANP'

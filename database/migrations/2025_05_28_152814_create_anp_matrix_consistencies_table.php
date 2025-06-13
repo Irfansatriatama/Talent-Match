@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('anp_matrix_consistencies', function (Blueprint $table) {
             $table->id();
-            $table->morphs('matrixable'); // matrixable_id dan matrixable_type
+            $table->morphs('matrixable'); 
             $table->float('consistency_ratio');
             $table->boolean('is_consistent');
             $table->timestamps();

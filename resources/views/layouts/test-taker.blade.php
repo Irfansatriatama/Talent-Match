@@ -1,4 +1,3 @@
-{{-- File: resources/views/layouts/test-taker.blade.php --}}
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
@@ -23,13 +22,13 @@
 <body class="bg-light">
     <main class="main-content position-relative max-height-vh-100 h-100">
         <div class="container-fluid py-4 test-container">
-            {{ $slot }} {{-- Konten dari komponen Livewire tes akan dimuat di sini --}}
+            {{ $slot }}
         </div>
     </main>
 
     <script src="{{ asset('assets') }}/js/core/popper.min.js"></script>
     <script src="{{ asset('assets') }}/js/core/bootstrap.min.js"></script>
     @livewireScripts
-    @stack('scripts') {{-- Untuk script khusus per halaman tes --}}
+    @stack('scripts')
 </body>
 </html>

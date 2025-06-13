@@ -7,7 +7,6 @@ use Illuminate\Support\Collection;
 
 class ANPService
 {
-    // Job position profiles
     private $jobProfiles = [
         'software_developer' => [
             'riasec' => ['RIA', 'RIS', 'IRA', 'IRC'],
@@ -57,14 +56,12 @@ class ANPService
             $riasecCode = $candidate->testProgress->where('test_id', 2)->first()->result_summary ?? '';
             $mbtiType = $candidate->latestMbtiScore->mbti_type ?? '';
             
-            // Normalize scores
             $criteria = [
                 'programming' => $programmingScore / 100,
                 'riasec' => $this->calculateRiasecMatch($riasecCode, $normalizedJobPosition),
                 'mbti' => $this->calculateMbtiFit($mbtiType, $normalizedJobPosition),
             ];
             
-            // Apply weights
             $weightedScore = 0;
             foreach ($criteria as $key => $value) {
                 $criteriaKey = str_replace('_match', '', str_replace('_fit', '', $key));
@@ -86,12 +83,10 @@ class ANPService
             ];
         }
         
-        // Sort by weighted score descending
         usort($matrix, function($a, $b) {
             return $b['weighted_score'] <=> $a['weighted_score'];
         });
         
-        // Assign ranks
         foreach ($matrix as $index => &$item) {
             $item['rank'] = $index + 1;
         }
@@ -101,10 +96,8 @@ class ANPService
     
     private function normalizeJobPosition(string $jobPosition): string
     {
-        // Convert to lowercase and replace spaces with underscores
         $normalized = strtolower(str_replace(' ', '_', trim($jobPosition)));
         
-        // Check if profile exists, otherwise use default
         return array_key_exists($normalized, $this->jobProfiles) ? $normalized : 'default';
     }
     
@@ -114,12 +107,10 @@ class ANPService
         
         $idealCodes = $this->jobProfiles[$jobPosition]['riasec'] ?? $this->jobProfiles['default']['riasec'];
         
-        // Direct match
         if (in_array($code, $idealCodes)) {
             return 1.0;
         }
         
-        // Calculate partial match based on character overlap
         $score = 0;
         $codeChars = str_split($code);
         
@@ -127,14 +118,12 @@ class ANPService
             $idealChars = str_split($idealCode);
             $matchCount = 0;
             
-            // Check position-based matching (position matters)
             for ($i = 0; $i < min(3, strlen($code), strlen($idealCode)); $i++) {
                 if (isset($codeChars[$i]) && isset($idealChars[$i]) && $codeChars[$i] === $idealChars[$i]) {
-                    $matchCount += (3 - $i) * 0.15; // Higher weight for earlier positions
+                    $matchCount += (3 - $i) * 0.15; 
                 }
             }
             
-            // Check character presence (position doesn't matter)
             foreach ($codeChars as $char) {
                 if (in_array($char, $idealChars)) {
                     $matchCount += 0.1;
@@ -153,12 +142,10 @@ class ANPService
         
         $idealTypes = $this->jobProfiles[$jobPosition]['mbti'] ?? $this->jobProfiles['default']['mbti'];
         
-        // Direct match
         if (in_array($type, $idealTypes)) {
             return 1.0;
         }
         
-        // Calculate partial match based on cognitive functions
         $score = 0;
         $typeChars = str_split($type);
         
@@ -166,10 +153,8 @@ class ANPService
             $idealChars = str_split($idealType);
             $matchScore = 0;
             
-            // Check each dimension
             for ($i = 0; $i < 4; $i++) {
                 if ($typeChars[$i] === $idealChars[$i]) {
-                    // Different weights for different dimensions based on job
                     switch ($i) {
                         case 0: // E/I
                             $matchScore += 0.2;

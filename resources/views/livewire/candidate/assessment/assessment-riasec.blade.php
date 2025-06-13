@@ -40,9 +40,7 @@
         </div>
     </div>
 
-    {{-- Area Notifikasi Modal & Session Flash --}}
     <div id="js-notification-area" class="mb-3">
-        {{-- MODAL UNTUK NOTIFIKASI SOAL BELUM DIJAWAB (GAYA MBTI) --}}
         @if ($showUnansweredQuestionsModal && $submissionErrorMessage)
         <div class="modal fade show" id="unansweredQuestionsModalRiasec" tabindex="-1" aria-labelledby="unansweredModalLabelRiasec" 
              style="display: block; background-color: rgba(0,0,0,0.6);" aria-modal="true" role="dialog">
@@ -68,9 +66,7 @@
             </div>
         </div>
         @endif
-        {{-- AKHIR MODAL --}}
 
-        {{-- Notifikasi dari session() akan muncul di sini setelah redirect --}}
         @if (session()->has('error'))
             <div class="alert alert-danger text-white alert-dismissible fade show" role="alert">
                 <span class="alert-text d-flex align-items-center">
@@ -105,8 +101,6 @@
                 ];
             @endphp
 
-            {{-- Progress bar yang sebelumnya ada di sini sudah dipindahkan ke sticky bar --}}
-
             @foreach ($questions as $index => $question)
                 <div class="card mb-3 question-item" id="question-card-{{ $question->question_id }}">
                     <div class="card-body p-3">
@@ -121,7 +115,7 @@
                         <h6 class="text-xs text-muted mb-3 text-center">Seberapa Anda tertarik atau menyukai aktivitas ini?</h6>
                         <div class="row justify-content-center gx-2 gy-2">
                             @foreach ($likertScale as $scoreValue => $scoreText)
-                                <div class="col-sm col mb-2"> {{-- `col-sm col` untuk layout responsif skala Likert --}}
+                                <div class="col-sm col mb-2">
                                     <div wire:click="selectAnswer({{ $question->question_id }}, {{ $scoreValue }})"
                                          class="form-check card card-body shadow-xs border text-center p-2 h-100 d-flex flex-column justify-content-center align-items-center cursor-pointer option-box riasec-option
                                                 {{ ($userAnswers[$question->question_id] ?? null) == $scoreValue ? 'active-option border-primary bg-gradient-primary text-white' : 'border-light hover-shadow-sm' }}">

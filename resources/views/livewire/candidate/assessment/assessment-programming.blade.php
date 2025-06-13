@@ -1,7 +1,6 @@
 <div>
     {{-- BAR STICKY UNTUK INFORMASI TES --}}
     <div class="card shadow-sm mb-4 sticky-top" style="top: 15px; z-index: 1020; background-color: #ffffff;">
-        {{-- ... (Konten HTML sticky bar tidak berubah) ... --}}
         <div class="card-body p-3">
             <div class="row align-items-center">
                 <div class="col-lg-7 col-md-6 col-12 mb-2 mb-md-0">
@@ -33,7 +32,6 @@
     </div>
 
     {{-- DESKRIPSI TES --}}
-    {{-- ... (Konten HTML deskripsi tidak berubah) ... --}}
     <div class="card shadow-none border mb-4">
         <div class="card-body p-3">
             <p class="text-sm mb-0 text-secondary">
@@ -43,7 +41,6 @@
     </div>
 
     {{-- Area Notifikasi Session Flash --}}
-    {{-- ... (Konten HTML notifikasi tidak berubah) ... --}}
     <div id="js-session-notification-area-programming" class="mb-3">
         @if (session()->has('error'))
             <div class="alert alert-danger text-white alert-dismissible fade show" role="alert">
@@ -60,8 +57,6 @@
     </div>
 
 
-    {{-- MODAL UNTUK NOTIFIKASI SOAL BELUM DIJAWAB --}}
-    {{-- ... (Konten HTML modal tidak berubah) ... --}}
     @if ($showUnansweredQuestionsModal && $submissionErrorMessage)
     <div class="modal fade show" id="unansweredModalProgramming" tabindex="-1" aria-labelledby="unansweredModalLabelProgramming" 
          style="display: block; background-color: rgba(0,0,0,0.6);" aria-modal="true" role="dialog">
@@ -92,7 +87,6 @@
     @endif
 
     <form wire:submit.prevent="finishTest(false)">
-        {{-- ... (Konten HTML form pertanyaan tidak berubah) ... --}}
         @if($questions && $questions->count() > 0)
             @foreach ($questions as $index => $question)
                 <div class="card mb-3 question-item" id="question-card-{{ $question->question_id }}">
@@ -102,7 +96,7 @@
                         </div>
                         <div class="mb-3">
                             <div class="p-3 border rounded bg-light mb-2">
-                                <pre class="text-dark mb-0" style="font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word;"><code class="language-python">{{-- Sesuaikan language-* jika perlu --}}
+                                <pre class="text-dark mb-0" style="font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word;"><code class="language-python">
 {!! nl2br(e($question->question_text)) !!}
                                 </code></pre>
                             </div>
