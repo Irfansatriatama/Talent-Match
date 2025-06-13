@@ -328,10 +328,9 @@ class AssessmentRiasec extends Component
             throw new \Exception("TestModel is not loaded in completeTestTransaction for user {$user->id}");
         }
         if (!$this->progress->started_at) {
-             Log::critical('RIASEC executeTestCompletion: started_at is NULL! Setting default.', ['progress_id' => $this->progress->id]); 
-             $this->progress->started_at = now()->subMinutes($this->timeLimitMinutes ?? 60); 
+            Log::critical('RIASEC executeTestCompletion: started_at is NULL! Setting default.', ['progress_id' => $this->progress->id]); 
+            $this->progress->started_at = now()->subMinutes($this->timeLimitMinutes ?? 60); 
         }
-
 
         DB::transaction(function () use ($user, $autoSubmit, $summaryMessage) {
             $scoringService = app(TestScoringService::class);
@@ -343,20 +342,24 @@ class AssessmentRiasec extends Component
             
             $timeSpentSeconds = now()->diffInSeconds($startTime);
             if ($this->timeLimitMinutes) {
-                 $timeSpentSeconds = min($timeSpentSeconds, $this->timeLimitMinutes * 60);
+                $timeSpentSeconds = min($timeSpentSeconds, $this->timeLimitMinutes * 60);
             }
 
+            // UPDATED: Tidak lagi menyimpan result_summary untuk RIASEC
             $this->progress->update([
                 'status' => 'completed', 
-                'score' => null, 
-                'result_summary' => $scoreResult['summary'] ?? ($autoSubmit ? $summaryMessage : 'Selesai'),
+                'score' => null, // RIASEC tidak memiliki skor numerik tunggal
+                'result_summary' => null, // UPDATED: Set null, data disimpan di tabel terpisah
                 'completed_at' => now(), 
                 'time_spent_seconds' => $timeSpentSeconds
             ]);
             
+            // NEW: Simpan skor detail RIASEC ke tabel terpisah
+            $scoringService->saveRiasecDetailedScores($user, $scoreResult);
+            
             $session = TestSession::where('user_id', $user->id)
-                      ->where('test_id', $this->testModel->test_id)
-                      ->whereNull('completed_at')->latest('started_at')->first();
+                    ->where('test_id', $this->testModel->test_id)
+                    ->whereNull('completed_at')->latest('started_at')->first();
             if ($session) {
                 $session->update(['completed_at' => now(), 'time_spent_seconds' => $timeSpentSeconds]);
             }

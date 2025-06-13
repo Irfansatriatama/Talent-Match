@@ -88,86 +88,84 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($candidates as $candidate)
-                                    @php
-                                        // Ambil data tes untuk kemudahan akses
-                                        $progTest = $candidate->testProgress->where('test_id', 1)->first();
-                                        $riasecTest = $candidate->testProgress->where('test_id', 2)->first();
-                                        $mbtiTest = $candidate->testProgress->where('test_id', 3)->first();
-                                        
-                                        // Untuk MBTI, ambil dari latestMbtiScore jika tes sudah completed
-                                        $mbtiResult = null;
-                                        if ($mbtiTest && $mbtiTest->status == 'completed') {
-                                            $mbtiResult = $candidate->latestMbtiScore?->mbti_type ?? $mbtiTest->result_summary;
-                                        }
-                                        
-                                        $completionPercentage = $candidate->getTestCompletionPercentage();
-                                    @endphp
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex px-2 py-1">
-                                                <div class="d-flex flex-column justify-content-center">
-                                                    <h6 class="mb-0 text-sm">{{ $candidate->name }}</h6>
-                                                    <p class="text-xs text-secondary mb-0">{{ $candidate->email }}</p>
+                            @forelse ($candidates as $candidate)
+                                @php
+                                    // UPDATED: Ambil data dari sumber yang benar
+                                    $progTest = $candidate->testProgress->where('test_id', 1)->first();
+                                    
+                                    // NEW: Ambil dari tabel terpisah
+                                    $riasecScore = $candidate->latestRiasecScore;
+                                    $mbtiScore = $candidate->latestMbtiScore;
+                                    
+                                    // Hitung completion percentage dengan metode yang sudah diupdate
+                                    $completionPercentage = $candidate->getTestCompletionPercentage();
+                                @endphp
+                                <tr>
+                                    <td>
+                                        <div class="d-flex px-2 py-1">
+                                            <div class="d-flex flex-column justify-content-center">
+                                                <h6 class="mb-0 text-sm">{{ $candidate->name }}</h6>
+                                                <p class="text-xs text-secondary mb-0">{{ $candidate->email }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <p class="text-sm font-weight-bold mb-0">
+                                            {{ ($progTest && $progTest->status == 'completed') ? ($progTest->score ?? 'N/A') : '-' }}
+                                        </p>
+                                    </td>
+                                    <td class="align-middle text-center text-sm">
+                                        <span class="badge badge-sm bg-gradient-info">
+                                            {{-- UPDATED: Ambil dari relasi riasecScore --}}
+                                            {{ $riasecScore ? $riasecScore->riasec_code : '-' }}
+                                        </span>
+                                    </td>
+                                    <td class="align-middle text-center text-sm">
+                                        <span class="badge badge-sm bg-gradient-warning">
+                                            {{-- UPDATED: Ambil dari relasi mbtiScore --}}
+                                            {{ $mbtiScore ? $mbtiScore->mbti_type : '-' }}
+                                        </span>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <div class="progress-wrapper w-75 mx-auto">
+                                            <div class="progress-info">
+                                                <div class="progress-percentage">
+                                                    <span class="text-xs font-weight-bold">{{ round($completionPercentage) }}%</span>
                                                 </div>
                                             </div>
-                                        </td>
-                                        <td class="align-middle text-center">
-                                            <p class="text-sm font-weight-bold mb-0">
-                                                {{ ($progTest && $progTest->status == 'completed') ? ($progTest->score ?? 'N/A') : '-' }}
-                                            </p>
-                                        </td>
-                                        <td class="align-middle text-center text-sm">
-                                            <span class="badge badge-sm bg-gradient-info">
-                                                {{ ($riasecTest && $riasecTest->status == 'completed') ? ($riasecTest->result_summary ?? 'N/A') : '-' }}
-                                            </span>
-                                        </td>
-                                        <td class="align-middle text-center text-sm">
-                                            <span class="badge badge-sm bg-gradient-warning">
-                                                {{ $mbtiResult ?? '-' }}
-                                            </span>
-                                        </td>
-                                        <td class="align-middle text-center">
-                                            <div class="progress-wrapper w-75 mx-auto">
-                                                <div class="progress-info">
-                                                    <div class="progress-percentage">
-                                                        <span class="text-xs font-weight-bold">{{ round($completionPercentage) }}%</span>
-                                                    </div>
-                                                </div>
-                                                <div class="progress">
-                                                    <div class="progress-bar @if($completionPercentage == 100) bg-gradient-success @else bg-gradient-info @endif" 
-                                                         role="progressbar" 
-                                                         style="width: {{ $completionPercentage }}%" 
-                                                         aria-valuenow="{{ $completionPercentage }}" 
-                                                         aria-valuemin="0" 
-                                                         aria-valuemax="100">
-                                                    </div>
+                                            <div class="progress">
+                                                <div class="progress-bar @if($completionPercentage == 100) bg-gradient-success @else bg-gradient-info @endif" 
+                                                    role="progressbar" 
+                                                    style="width: {{ $completionPercentage }}%" 
+                                                    aria-valuenow="{{ $completionPercentage }}" 
+                                                    aria-valuemin="0" 
+                                                    aria-valuemax="100">
                                                 </div>
                                             </div>
-                                        </td>
-                                        <td class="align-middle text-center">
-                                            {{-- PERBAIKAN: Gunakan relasi Eloquent yang benar --}}
-                                            <span class="text-secondary text-xs font-weight-bold">
-                                                {{ $candidate->jobPosition->name ?? 'Belum Dipilih' }}
-                                            </span>
-                                        </td>
-                                        <td class="align-middle">
-                                            <a href="{{ route('hr.detail-candidate', ['candidate' => $candidate->id]) }}" 
-                                               class="text-secondary font-weight-bold text-xs" 
-                                               data-bs-toggle="tooltip" 
-                                               data-bs-title="Lihat Detail Kandidat">
-                                                <i class="material-icons text-sm">visibility</i> Detail
-                                            </a>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="7" class="text-center p-3">
-                                            <p class="text-secondary">Tidak ada kandidat yang ditemukan dengan filter tersebut.</p>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
+                                        </div>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <span class="text-secondary text-xs font-weight-bold">
+                                            {{ $candidate->jobPosition->name ?? 'Belum Dipilih' }}
+                                        </span>
+                                    </td>
+                                    <td class="align-middle">
+                                        <a href="{{ route('hr.detail-candidate', ['candidate' => $candidate->id]) }}" 
+                                        class="text-secondary font-weight-bold text-xs" 
+                                        data-bs-toggle="tooltip" 
+                                        data-bs-title="Lihat Detail Kandidat">
+                                            <i class="material-icons text-sm">visibility</i> Detail
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="text-center p-3">
+                                        <p class="text-secondary">Tidak ada kandidat yang ditemukan dengan filter tersebut.</p>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
                         </table>
                     </div>
                     {{-- Pagination --}}

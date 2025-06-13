@@ -6,6 +6,7 @@ use App\Models\Test;
 use App\Models\User;
 use App\Models\UserAnswer;
 use App\Models\UserMbtiScore;
+use App\Models\UserRiasecScore; // NEW: Import model baru
 
 class TestScoringService
 {
@@ -65,10 +66,20 @@ class TestScoringService
         $top3 = array_slice(array_keys($dimensions), 0, 3);
         $code = implode('', $top3);
         
+        // UPDATED: Tidak lagi mengembalikan 'summary', tapi tetap sediakan untuk kompatibilitas
         return [
-            'summary' => $code,
+            'summary' => $code, // Tetap ada untuk backward compatibility
+            'code' => $code,    // Kode RIASEC 3 huruf
             'dimensions' => $dimensions,
-            'top_3' => $top3
+            'top_3' => $top3,
+            'scores' => [       // NEW: Format untuk disimpan ke database
+                'r_score' => $dimensions['R'],
+                'i_score' => $dimensions['I'],
+                'a_score' => $dimensions['A'],
+                's_score' => $dimensions['S'],
+                'e_score' => $dimensions['E'],
+                'c_score' => $dimensions['C']
+            ]
         ];
     }
     
@@ -100,14 +111,17 @@ class TestScoringService
             
             if ($total > 0) {
                 $strengths[$dichotomy] = (max($poles) / $total) * 100;
+            } else {
+                $strengths[$dichotomy] = 50; // Default jika tidak ada jawaban
             }
             
             $rawScores[strtolower($dichotomy) . '_raw_' . strtolower(array_keys($poles)[0])] = $poles[array_keys($poles)[0]];
             $rawScores[strtolower($dichotomy) . '_raw_' . strtolower(array_keys($poles)[1])] = $poles[array_keys($poles)[1]];
         }
         
+        // UPDATED: Tidak lagi mengembalikan 'summary'
         return [
-            'summary' => $mbtiType,
+            'summary' => $mbtiType, // Tetap ada untuk backward compatibility
             'type' => $mbtiType,
             'strengths' => $strengths,
             'raw_scores' => $rawScores,
@@ -115,6 +129,33 @@ class TestScoringService
         ];
     }
     
+    /**
+     * NEW METHOD: Save RIASEC detailed scores to database
+     */
+    public function saveRiasecDetailedScores(User $user, array $scoreData)
+    {
+        $data = [
+            'user_id' => $user->id,
+            'r_score' => $scoreData['scores']['r_score'] ?? 0,
+            'i_score' => $scoreData['scores']['i_score'] ?? 0,
+            'a_score' => $scoreData['scores']['a_score'] ?? 0,
+            's_score' => $scoreData['scores']['s_score'] ?? 0,
+            'e_score' => $scoreData['scores']['e_score'] ?? 0,
+            'c_score' => $scoreData['scores']['c_score'] ?? 0,
+            'riasec_code' => $scoreData['code'] ?? '',
+            'calculated_at' => now()
+        ];
+        
+        // Gunakan updateOrCreate untuk menghindari duplikasi
+        UserRiasecScore::updateOrCreate(
+            ['user_id' => $user->id],
+            $data
+        );
+    }
+    
+    /**
+     * UPDATED METHOD: Improved MBTI score saving with updateOrCreate
+     */
     public function saveMbtiDetailedScores(User $user, array $scoreData)
     {
         $data = [
@@ -127,34 +168,23 @@ class TestScoringService
             'calculated_at' => now()
         ];
 
+        // Tambahkan skor detail dari detailed_scores
         if (isset($scoreData['detailed_scores'])) {
-        $detailedScores = $scoreData['detailed_scores'];
-        $data['ei_score_e'] = $detailedScores['EI']['E'] ?? 0;
-        $data['ei_score_i'] = $detailedScores['EI']['I'] ?? 0;
-        $data['sn_score_s'] = $detailedScores['SN']['S'] ?? 0;
-        $data['sn_score_n'] = $detailedScores['SN']['N'] ?? 0;
-        $data['tf_score_t'] = $detailedScores['TF']['T'] ?? 0;
-        $data['tf_score_f'] = $detailedScores['TF']['F'] ?? 0;
-        $data['jp_score_j'] = $detailedScores['JP']['J'] ?? 0;
-        $data['jp_score_p'] = $detailedScores['JP']['P'] ?? 0;
-    } else {
-        // Fallback jika struktur 'detailed_scores' tidak ada, meskipun seharusnya ada dari scoreMbti()
-        // Atau jika Anda memang ingin menggunakan 'raw_scores' yang memiliki format 'ei_raw_e',
-        // maka mapping manual diperlukan:
-        // $mapping = [
-        //     'ei_raw_e' => 'ei_score_e', 'ei_raw_i' => 'ei_score_i',
-        //     'sn_raw_s' => 'sn_score_s', 'sn_raw_n' => 'sn_score_n',
-        //     'tf_raw_t' => 'tf_score_t', 'tf_raw_f' => 'tf_score_f',
-        //     'jp_raw_j' => 'jp_score_j', 'jp_raw_p' => 'jp_score_p',
-        // ];
-        // foreach ($scoreData['raw_scores'] as $rawKey => $value) {
-        //     if (array_key_exists($rawKey, $mapping)) {
-        //         $data[$mapping[$rawKey]] = $value;
-        //     }
-        // }
-        // Untuk saat ini, saya akan mengasumsikan 'detailed_scores' adalah sumber yang benar berdasarkan output 'scoreMbti'.
-    }
+            $detailedScores = $scoreData['detailed_scores'];
+            $data['ei_score_e'] = $detailedScores['EI']['E'] ?? 0;
+            $data['ei_score_i'] = $detailedScores['EI']['I'] ?? 0;
+            $data['sn_score_s'] = $detailedScores['SN']['S'] ?? 0;
+            $data['sn_score_n'] = $detailedScores['SN']['N'] ?? 0;
+            $data['tf_score_t'] = $detailedScores['TF']['T'] ?? 0;
+            $data['tf_score_f'] = $detailedScores['TF']['F'] ?? 0;
+            $data['jp_score_j'] = $detailedScores['JP']['J'] ?? 0;
+            $data['jp_score_p'] = $detailedScores['JP']['P'] ?? 0;
+        }
         
-        UserMbtiScore::create($data);
+        // UPDATED: Gunakan updateOrCreate untuk menghindari duplikasi
+        UserMbtiScore::updateOrCreate(
+            ['user_id' => $user->id],
+            $data
+        );
     }
 }

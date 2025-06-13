@@ -247,24 +247,27 @@ class AssessmentMbti extends Component
             $scoringService = app(TestScoringService::class);
             $scoreResult = $scoringService->calculateScore($this->testModel, $user);
             
-            
             $startTime = ($this->progress->started_at instanceof Carbon) ? $this->progress->started_at : Carbon::parse($this->progress->started_at);
             $timeSpentSeconds = now()->diffInSeconds($startTime);
             if ($this->timeLimitMinutes) {
-                 $timeSpentSeconds = min($timeSpentSeconds, $this->timeLimitMinutes * 60);
+                $timeSpentSeconds = min($timeSpentSeconds, $this->timeLimitMinutes * 60);
             }
 
+            // UPDATED: Tidak lagi menyimpan result_summary untuk MBTI
             $this->progress->update([
                 'status' => 'completed', 
-                'score' => null, 
-                'result_summary' => $scoreResult['summary'] ?? ($autoSubmit ? $summaryMessage : 'Selesai'),
+                'score' => null, // MBTI tidak memiliki skor numerik tunggal
+                'result_summary' => null, // UPDATED: Set null, data disimpan di tabel terpisah
                 'completed_at' => now(), 
                 'time_spent_seconds' => $timeSpentSeconds
             ]);
             
+            // EXISTING: Simpan skor detail MBTI (sudah ada di kode asli)
+            $scoringService->saveMbtiDetailedScores($user, $scoreResult);
+            
             $session = TestSession::where('user_id', $user->id)
-                      ->where('test_id', $this->testModel->test_id)
-                      ->whereNull('completed_at')->latest('started_at')->first();
+                    ->where('test_id', $this->testModel->test_id)
+                    ->whereNull('completed_at')->latest('started_at')->first();
             if ($session) {
                 $session->update(['completed_at' => now(), 'time_spent_seconds' => $timeSpentSeconds]);
             }

@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory; 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -12,13 +12,13 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable; 
+    use HasApiTokens, HasFactory, Notifiable;
 
-    
+
     public const ROLE_CANDIDATE = 'candidate';
     public const ROLE_HR = 'hr';
 
-    
+
     public const JOB_POSITION_SOFTWARE_ENGINEER = 'Software Engineer';
     public const JOB_POSITION_DATA_ANALYST = 'Data Analyst';
     public const JOB_POSITION_CYBERSECURITY_SPECIALIST = 'Cybersecurity Specialist';
@@ -38,9 +38,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role', 
+        'role',
         'phone',
-        'job_position_id', 
+        'job_position_id',
         'profile_summary',
     ];
 
@@ -84,6 +84,23 @@ class User extends Authenticatable
         return $this->hasOne(UserMbtiScore::class, 'user_id', 'id')->latestOfMany('calculated_at');
     }
 
+    /**
+     * NEW RELATION: Get the user's RIASEC score.
+     * Satu user memiliki satu hasil RIASEC
+     */
+    public function riasecScore(): HasOne
+    {
+        return $this->hasOne(UserRiasecScore::class, 'user_id', 'id');
+    }
+
+    /**
+     * Alias untuk konsistensi dengan latestMbtiScore
+     */
+    public function latestRiasecScore(): HasOne
+    {
+        return $this->hasOne(UserRiasecScore::class, 'user_id', 'id')->latestOfMany('calculated_at');
+    }
+
     public function testSessions(): HasMany
     {
         return $this->hasMany(TestSession::class, 'user_id', 'id');
@@ -109,17 +126,54 @@ class User extends Authenticatable
         return $this->role === self::ROLE_HR;
     }
 
+    /**
+     * UPDATED METHOD: Check if user has completed all tests
+     * Sekarang cek dari tabel skor terpisah, bukan dari result_summary
+     */
     public function hasCompletedAllTests(int $requiredTestCount = 3): bool
     {
-        return $this->testProgress()->where('status', 'completed')->distinct('test_id')->count() >= $requiredTestCount;
+        $completedProgram = $this->testProgress()
+            ->where('test_id', 1)
+            ->where('status', 'completed')
+            ->exists();
+
+        $completedRiasec = $this->riasecScore()->exists();
+        $completedMbti = $this->latestMbtiScore()->exists();
+
+        $completedCount = ($completedProgram ? 1 : 0) +
+                          ($completedRiasec ? 1 : 0) +
+                          ($completedMbti ? 1 : 0);
+
+        return $completedCount >= $requiredTestCount;
     }
 
+    /**
+     * UPDATED METHOD: Get test completion percentage
+     * Sekarang cek dari berbagai sumber
+     */
     public function getTestCompletionPercentage(int $totalTests = 3): float
     {
         if ($totalTests === 0) {
             return 0.0;
         }
-        $completedTests = $this->testProgress()->where('status', 'completed')->distinct('test_id')->count();
-        return ($completedTests / $totalTests) * 100;
+
+        $completedCount = 0;
+
+        // Cek programming test
+        if ($this->testProgress()->where('test_id', 1)->where('status', 'completed')->exists()) {
+            $completedCount++;
+        }
+
+        // Cek RIASEC test
+        if ($this->riasecScore()->exists()) {
+            $completedCount++;
+        }
+
+        // Cek MBTI test
+        if ($this->latestMbtiScore()->exists()) {
+            $completedCount++;
+        }
+
+        return ($completedCount / $totalTests) * 100;
     }
 }

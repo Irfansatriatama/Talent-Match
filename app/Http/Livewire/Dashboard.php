@@ -17,7 +17,13 @@ class Dashboard extends Component
     public float $completionPercentage = 0.0;
     public string $progressMessage = '';
     public array $testsList = [];
+    
+    // UPDATED: Properties untuk kontrol notifikasi
     public bool $isProfileComplete = false; 
+    public bool $showProfileCompletionNotice = true;
+    public bool $showTutorial = false;
+    public bool $isNewUser = false;
+    
     public function mount()
     {
         $user = Auth::user();
@@ -29,12 +35,11 @@ class Dashboard extends Component
         }
         $this->userName = $user->name;
 
-        $this->isProfileComplete = !empty($user->name) &&
-                                   !empty($user->email) &&
-                                   !empty($user->phone) &&
-                                   !empty($user->job_position) && 
-                                   !empty(trim($user->profile_summary ?? '')); 
-
+        // UPDATED: Logika pemeriksaan kelengkapan profil yang lebih baik
+        $this->checkProfileCompleteness($user);
+        
+        // NEW: Check if user is new (created within last 7 days or hasn't completed any test)
+        $this->checkIfNewUser($user);
 
         $allTests = Test::orderBy('test_order')->get();
         $this->totalTestsCount = $allTests->count();
@@ -69,7 +74,7 @@ class Dashboard extends Component
                     'order' => $test->test_order,
                     'status_internal' => $status,
                     'score' => ($progress && $currentTestType === 'programming') ? $progress->score : null,
-                    'result_summary' => ($progress && in_array($currentTestType, ['riasec', 'mbti'])) ? $progress->result_summary : null,
+                    'result_summary' => null, // UPDATED: Tidak lagi menggunakan result_summary
                     'test_type' => $currentTestType,
                     'icon' => $this->getTestIcon($currentTestType),
                     'can_start' => false,
@@ -80,6 +85,18 @@ class Dashboard extends Component
                     'action_button_class' => 'btn-secondary',
                     'prerequisite_message' => null,
                 ];
+                
+                // NEW: Load actual results from dedicated tables
+                if ($status === 'completed') {
+                    if ($currentTestType === 'riasec') {
+                        $riasecScore = $user->latestRiasecScore;
+                        $testItem['result_summary'] = $riasecScore ? $riasecScore->riasec_code : null;
+                    } elseif ($currentTestType === 'mbti') {
+                        $mbtiScore = $user->latestMbtiScore;
+                        $testItem['result_summary'] = $mbtiScore ? $mbtiScore->mbti_type : null;
+                    }
+                }
+                
                 $tempTestDetails[$test->test_id] = $testItem;
             }
 
@@ -133,6 +150,62 @@ class Dashboard extends Component
         } else {
             $this->progressMessage = "Belum ada tes yang tersedia saat ini.";
         }
+    }
+
+    /**
+     * NEW METHOD: Check profile completeness
+     */
+    private function checkProfileCompleteness(User $user): void
+    {
+        // Check all required fields
+        $this->isProfileComplete = !empty($user->name) &&
+                                   !empty($user->email) &&
+                                   !empty($user->phone) &&
+                                   !empty($user->job_position_id) && // Changed from job_position
+                                   !empty(trim($user->profile_summary ?? ''));
+        
+        // Only show notice if profile is incomplete
+        $this->showProfileCompletionNotice = !$this->isProfileComplete;
+    }
+
+    /**
+     * NEW METHOD: Check if user is new
+     */
+    private function checkIfNewUser(User $user): void
+    {
+        // Consider user new if:
+        // 1. Created within last 7 days
+        // 2. OR hasn't completed any test
+        $createdRecently = $user->created_at->diffInDays(now()) <= 7;
+        $hasCompletedAnyTest = UserTestProgress::where('user_id', $user->id)
+                                               ->where('status', 'completed')
+                                               ->exists();
+        
+        $this->isNewUser = $createdRecently || !$hasCompletedAnyTest;
+        
+        // Show tutorial for new users who haven't seen it
+        // In a real app, you might want to track this in the database
+        $this->showTutorial = $this->isNewUser && !session()->has('tutorial_shown_' . $user->id);
+    }
+
+    /**
+     * NEW METHOD: Dismiss tutorial
+     */
+    public function dismissTutorial(): void
+    {
+        $this->showTutorial = false;
+        // Mark tutorial as shown for this session
+        if (Auth::check()) {
+            session()->put('tutorial_shown_' . Auth::id(), true);
+        }
+    }
+
+    /**
+     * NEW METHOD: Show tutorial manually
+     */
+    public function showTutorialManually(): void
+    {
+        $this->showTutorial = true;
     }
 
     private function getTestIcon(string $testType): string
