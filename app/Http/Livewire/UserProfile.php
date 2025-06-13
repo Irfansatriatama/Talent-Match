@@ -18,7 +18,7 @@ class UserProfile extends Component
             'user.name' => 'required',
             'user.email' => 'required|email|unique:users,email,' . $this->user->id,
             'user.phone' => 'nullable|max:15',
-            'user.profile_summary' => 'nullable|string|max:1000',
+            'user.profile_summary' => 'nullable|string|max:10000',
             'user.job_position_id' => 'nullable|exists:job_positions,id',
         ];
     }

@@ -36,27 +36,21 @@ class DashboardHr extends Component
         $this->loadRiasecDistribution();
     }
 
-    /**
-     * UPDATED: Load statistics with new data sources
-     */
     public function loadStatistics(): void
     {
         $candidates = User::where('role', User::ROLE_CANDIDATE);
         $totalTests = Test::count() ?: 3;
         
-        // Kandidat baru minggu ini
         $weekStart = Carbon::now()->startOfWeek();
         $newCandidatesThisWeek = User::where('role', User::ROLE_CANDIDATE)
             ->where('created_at', '>=', $weekStart)
             ->count();
         
-        // Analisis ANP bulan ini
         $monthStart = Carbon::now()->startOfMonth();
         $anpThisMonth = AnpAnalysis::where('created_at', '>=', $monthStart)->count();
 
         $totalCandidates = $candidates->count();
         
-        // UPDATED: Hitung yang sudah selesai semua dengan cara baru
         $completedAll = User::where('role', User::ROLE_CANDIDATE)
             ->whereHas('testProgress', function($q) {
                 $q->where('test_id', 1)->where('status', 'completed');
@@ -80,11 +74,10 @@ class DashboardHr extends Component
     }
 
     /**
-     * UPDATED: Load top candidates with proper scoring
+     * PERBAIKAN: Tambahkan ->values() untuk mereset key collection
      */
     public function loadTopCandidates(): void
     {
-        // UPDATED: Hanya ambil yang sudah selesai semua tes
         $this->topCandidates = User::where('role', User::ROLE_CANDIDATE)
             ->whereHas('testProgress', function($q) {
                 $q->where('test_id', 1)->where('status', 'completed');
@@ -99,18 +92,17 @@ class DashboardHr extends Component
             ])
             ->get()
             ->map(function($user) {
-                // Hanya hitung skor programming untuk ranking
                 $progScore = $user->testProgress->first()->score ?? 0;
                 $user->average_score = round($progScore, 2);
                 return $user;
             })
             ->sortByDesc('average_score')
-            ->take(5);
+            ->take(5)
+            ->values(); // <-- TAMBAHKAN BARIS INI
     }
     
     public function loadRecentAnalyses(): void
     {
-        // Ambil 5 analisis terbaru dengan informasi lengkap
         $this->recentAnalyses = AnpAnalysis::with(['jobPosition', 'candidates'])
             ->withCount('candidates')
             ->latest()
@@ -118,12 +110,8 @@ class DashboardHr extends Component
             ->get();
     }
     
-    /**
-     * UPDATED: Load MBTI distribution from dedicated table
-     */
     public function loadMbtiDistribution(): void
     {
-        // UPDATED: Ambil dari tabel user_mbti_scores langsung
         $mbtiDistribution = UserMbtiScore::selectRaw('mbti_type, COUNT(*) as count')
             ->whereHas('user', function($q) {
                 $q->where('role', User::ROLE_CANDIDATE);
@@ -135,7 +123,6 @@ class DashboardHr extends Component
         $this->mbtiLabels = $mbtiDistribution->pluck('mbti_type')->toArray();
         $this->mbtiData = $mbtiDistribution->pluck('count')->toArray();
         
-        // Warna untuk setiap tipe MBTI
         $this->mbtiColors = [
             '#e91e63', '#9c27b0', '#673ab7', '#3f51b5',
             '#2196f3', '#03a9f4', '#00bcd4', '#009688',
@@ -144,12 +131,8 @@ class DashboardHr extends Component
         ];
     }
     
-    /**
-     * UPDATED: Load RIASEC distribution from dedicated table
-     */
     public function loadRiasecDistribution(): void
     {
-        // UPDATED: Ambil dari tabel user_riasec_scores
         $riasecCounts = ['R' => 0, 'I' => 0, 'A' => 0, 'S' => 0, 'E' => 0, 'C' => 0];
         
         $riasecScores = UserRiasecScore::whereHas('user', function($q) {

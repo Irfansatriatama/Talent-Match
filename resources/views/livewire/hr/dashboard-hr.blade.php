@@ -124,7 +124,7 @@
 
     {{-- BARIS 3: TABEL DAN KARTU INFORMASI --}}
     <div class="row mt-4">
-        {{-- TOP KANDIDAT (TANPA TOMBOL LIHAT SEMUA) --}}
+        {{-- TOP KANDIDAT (DENGAN SCROLLABLE TABLE) --}}
         <div class="col-lg-7 mb-lg-0 mb-4">
             <div class="card h-100">
                 <div class="card-header pb-0">
@@ -132,62 +132,65 @@
                     <p class="text-sm">Kandidat dengan performa terbaik di semua tes</p>
                 </div>
                 <div class="card-body px-0 pb-2">
-                    <div class="table-responsive">
-                        <table class="table align-items-center mb-0">
-                            <thead>
-                                <tr>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Kandidat</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Posisi</th>
-                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Skor Rata-rata</th>
-                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Ranking</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($topCandidates as $index => $candidate)
-                                <tr>
-                                    <td>
-                                        <div class="d-flex px-2 py-1">
-                                            <div>
-                                                <img src="https://ui-avatars.com/api/?name={{ urlencode($candidate->name) }}&background=random" 
-                                                     class="avatar avatar-sm me-3 border-radius-lg" alt="user">
+                    {{-- PERBAIKAN: Membungkus table dengan div scrollable --}}
+                    <div style="max-height: 400px; overflow-y: auto;">
+                        <div class="table-responsive">
+                            <table class="table align-items-center mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Kandidat</th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Posisi</th>
+                                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Skor Rata-rata</th>
+                                        <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Ranking</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($topCandidates as $index => $candidate)
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex px-2 py-1">
+                                                <div>
+                                                    <img src="https://ui-avatars.com/api/?name={{ urlencode($candidate->name) }}&background=random" 
+                                                         class="avatar avatar-sm me-3 border-radius-lg" alt="user">
+                                                </div>
+                                                <div class="d-flex flex-column justify-content-center">
+                                                    <h6 class="mb-0 text-sm">{{ $candidate->name }}</h6>
+                                                    <p class="text-xs text-secondary mb-0">{{ $candidate->email }}</p>
+                                                </div>
                                             </div>
-                                            <div class="d-flex flex-column justify-content-center">
-                                                <h6 class="mb-0 text-sm">{{ $candidate->name }}</h6>
-                                                <p class="text-xs text-secondary mb-0">{{ $candidate->email }}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <p class="text-xs font-weight-bold mb-0">{{ $candidate->jobPosition->name ?? 'N/A' }}</p>
-                                    </td>
-                                    <td class="align-middle text-center">
-                                        <span class="text-secondary text-xs font-weight-bold">{{ $candidate->average_score }}</span>
-                                    </td>
-                                    <td class="align-middle text-center text-sm">
-                                        <span class="badge badge-sm 
-                                            @if($index == 0) bg-gradient-success 
-                                            @elseif($index == 1) bg-gradient-info 
-                                            @elseif($index == 2) bg-gradient-warning 
-                                            @else bg-gradient-secondary @endif">
-                                            #{{ $index + 1 }}
-                                        </span>
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="4" class="text-center py-3">
-                                        <p class="text-muted mb-0">Belum ada kandidat yang menyelesaikan semua tes.</p>
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                                        </td>
+                                        <td>
+                                            <p class="text-xs font-weight-bold mb-0">{{ $candidate->jobPosition->name ?? 'N/A' }}</p>
+                                        </td>
+                                        <td class="align-middle text-center">
+                                            <span class="text-secondary text-xs font-weight-bold">{{ $candidate->average_score }}</span>
+                                        </td>
+                                        <td class="align-middle text-center text-sm">
+                                            <span class="badge badge-sm 
+                                                @if($index == 0) bg-gradient-success 
+                                                @elseif($index == 1) bg-gradient-info 
+                                                @elseif($index == 2) bg-gradient-warning 
+                                                @else bg-gradient-secondary @endif">
+                                                #{{ $index + 1 }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center py-3">
+                                            <p class="text-muted mb-0">Belum ada kandidat yang menyelesaikan semua tes.</p>
+                                        </td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- ANALISIS ANP TERBARU (REDESIGNED) --}}
+        {{-- ANALISIS ANP TERBARU (DENGAN SCROLLABLE CONTENT) --}}
         <div class="col-lg-5">
             <div class="card h-100">
                 <div class="card-header pb-0">
@@ -195,82 +198,85 @@
                     <p class="text-sm">5 analisis terakhir yang dibuat</p>
                 </div>
                 <div class="card-body p-3">
-                    @forelse ($recentAnalyses as $analysis)
-                        <div class="card mb-3 border">
-                            <div class="card-body p-3">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div class="flex-grow-1">
-                                        <h6 class="mb-1 text-sm">{{ $analysis->name }}</h6>
-                                        <p class="text-xs text-muted mb-2">
-                                            <i class="material-icons text-sm align-middle">work</i> 
-                                            {{ $analysis->jobPosition->name ?? 'N/A' }}
-                                        </p>
-                                        {{-- AVATAR GRUP KANDIDAT --}}
-                                        <div class="avatar-group">
-                                            @foreach($analysis->candidates->take(3) as $candidate)
-                                                <a href="#" class="avatar avatar-xs rounded-circle" 
-                                                   data-bs-toggle="tooltip" 
-                                                   data-bs-placement="bottom" 
-                                                   title="{{ $candidate->name }}">
-                                                    <img src="https://ui-avatars.com/api/?name={{ urlencode($candidate->name) }}&size=30" 
-                                                         alt="{{ $candidate->name }}">
-                                                </a>
-                                            @endforeach
-                                            @if($analysis->candidates_count > 3)
-                                                <span class="avatar avatar-xs rounded-circle bg-gradient-dark text-white">
-                                                    +{{ $analysis->candidates_count - 3 }}
-                                                </span>
-                                            @endif
+                    {{-- PERBAIKAN: Membungkus content dengan div scrollable --}}
+                    <div style="max-height: 400px; overflow-y: auto;">
+                        @forelse ($recentAnalyses as $analysis)
+                            <div class="card mb-3 border">
+                                <div class="card-body p-3">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1 text-sm">{{ $analysis->name }}</h6>
+                                            <p class="text-xs text-muted mb-2">
+                                                <i class="material-icons text-sm align-middle">work</i> 
+                                                {{ $analysis->jobPosition->name ?? 'N/A' }}
+                                            </p>
+                                            {{-- AVATAR GRUP KANDIDAT --}}
+                                            <div class="avatar-group">
+                                                @foreach($analysis->candidates->take(3) as $candidate)
+                                                    <a href="#" class="avatar avatar-xs rounded-circle" 
+                                                       data-bs-toggle="tooltip" 
+                                                       data-bs-placement="bottom" 
+                                                       title="{{ $candidate->name }}">
+                                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($candidate->name) }}&size=30" 
+                                                             alt="{{ $candidate->name }}">
+                                                    </a>
+                                                @endforeach
+                                                @if($analysis->candidates_count > 3)
+                                                    <span class="avatar avatar-xs rounded-circle bg-gradient-dark text-white">
+                                                        +{{ $analysis->candidates_count - 3 }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            {{-- BADGE STATUS DENGAN WARNA --}}
+                                            @php
+                                                $statusClass = 'bg-gradient-secondary';
+                                                if ($analysis->status == 'completed') {
+                                                    $statusClass = 'bg-gradient-success';
+                                                } elseif ($analysis->status == 'calculating') {
+                                                    $statusClass = 'bg-gradient-info';
+                                                } elseif (str_contains($analysis->status, 'pending')) {
+                                                    $statusClass = 'bg-gradient-warning';
+                                                } elseif ($analysis->status == 'error') {
+                                                    $statusClass = 'bg-gradient-danger';
+                                                }
+                                            @endphp
+                                            <span class="badge badge-sm {{ $statusClass }} mb-2">
+                                                {{ ucfirst(str_replace('_', ' ', $analysis->status)) }}
+                                            </span>
+                                            <p class="text-xs text-secondary mb-0">
+                                                {{ $analysis->created_at->diffForHumans() }}
+                                            </p>
                                         </div>
                                     </div>
-                                    <div class="text-end">
-                                        {{-- BADGE STATUS DENGAN WARNA --}}
-                                        @php
-                                            $statusClass = 'bg-gradient-secondary';
-                                            if ($analysis->status == 'completed') {
-                                                $statusClass = 'bg-gradient-success';
-                                            } elseif ($analysis->status == 'calculating') {
-                                                $statusClass = 'bg-gradient-info';
-                                            } elseif (str_contains($analysis->status, 'pending')) {
-                                                $statusClass = 'bg-gradient-warning';
-                                            } elseif ($analysis->status == 'error') {
-                                                $statusClass = 'bg-gradient-danger';
-                                            }
-                                        @endphp
-                                        <span class="badge badge-sm {{ $statusClass }} mb-2">
-                                            {{ ucfirst(str_replace('_', ' ', $analysis->status)) }}
-                                        </span>
-                                        <p class="text-xs text-secondary mb-0">
-                                            {{ $analysis->created_at->diffForHumans() }}
-                                        </p>
+                                    {{-- TOMBOL AKSI --}}
+                                    <div class="mt-2">
+                                        @if($analysis->status == 'completed')
+                                            <a href="{{ route('hr.anp.analysis.show', $analysis->id) }}" 
+                                               class="btn btn-sm bg-gradient-primary mb-0">
+                                                <i class="material-icons text-sm">visibility</i> Lihat Hasil
+                                            </a>
+                                        @elseif($analysis->status !== 'calculating')
+                                            <a href="{{ route('hr.anp.analysis.network.define', $analysis->id) }}" 
+                                               class="btn btn-sm bg-gradient-warning mb-0">
+                                                <i class="material-icons text-sm">play_arrow</i> Lanjutkan Proses
+                                            </a>
+                                        @else
+                                            <button class="btn btn-sm bg-gradient-info mb-0" disabled>
+                                                <i class="material-icons text-sm">hourglass_empty</i> Sedang Diproses...
+                                            </button>
+                                        @endif
                                     </div>
                                 </div>
-                                {{-- TOMBOL AKSI --}}
-                                <div class="mt-2">
-                                    @if($analysis->status == 'completed')
-                                        <a href="{{ route('hr.anp.analysis.show', $analysis->id) }}" 
-                                           class="btn btn-sm bg-gradient-primary mb-0">
-                                            <i class="material-icons text-sm">visibility</i> Lihat Hasil
-                                        </a>
-                                    @elseif($analysis->status !== 'calculating')
-                                        <a href="{{ route('hr.anp.analysis.network.define', $analysis->id) }}" 
-                                           class="btn btn-sm bg-gradient-warning mb-0">
-                                            <i class="material-icons text-sm">play_arrow</i> Lanjutkan Proses
-                                        </a>
-                                    @else
-                                        <button class="btn btn-sm bg-gradient-info mb-0" disabled>
-                                            <i class="material-icons text-sm">hourglass_empty</i> Sedang Diproses...
-                                        </button>
-                                    @endif
-                                </div>
                             </div>
-                        </div>
-                    @empty
-                        <div class="text-center py-4">
-                            <i class="material-icons text-5xl text-secondary opacity-5">analytics</i>
-                            <p class="text-muted mt-2">Belum ada analisis yang dilakukan.</p>
-                        </div>
-                    @endforelse
+                        @empty
+                            <div class="text-center py-4">
+                                <i class="material-icons text-5xl text-secondary opacity-5">analytics</i>
+                                <p class="text-muted mt-2">Belum ada analisis yang dilakukan.</p>
+                            </div>
+                        @endforelse
+                    </div>
                 </div>
             </div>
         </div>

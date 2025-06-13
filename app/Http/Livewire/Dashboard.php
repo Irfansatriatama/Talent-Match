@@ -152,30 +152,19 @@ class Dashboard extends Component
         }
     }
 
-    /**
-     * NEW METHOD: Check profile completeness
-     */
     private function checkProfileCompleteness(User $user): void
     {
-        // Check all required fields
         $this->isProfileComplete = !empty($user->name) &&
                                    !empty($user->email) &&
                                    !empty($user->phone) &&
-                                   !empty($user->job_position_id) && // Changed from job_position
+                                   !empty($user->job_position_id) &&
                                    !empty(trim($user->profile_summary ?? ''));
         
-        // Only show notice if profile is incomplete
         $this->showProfileCompletionNotice = !$this->isProfileComplete;
     }
 
-    /**
-     * NEW METHOD: Check if user is new
-     */
     private function checkIfNewUser(User $user): void
     {
-        // Consider user new if:
-        // 1. Created within last 7 days
-        // 2. OR hasn't completed any test
         $createdRecently = $user->created_at->diffInDays(now()) <= 7;
         $hasCompletedAnyTest = UserTestProgress::where('user_id', $user->id)
                                                ->where('status', 'completed')
@@ -183,29 +172,24 @@ class Dashboard extends Component
         
         $this->isNewUser = $createdRecently || !$hasCompletedAnyTest;
         
-        // Show tutorial for new users who haven't seen it
-        // In a real app, you might want to track this in the database
         $this->showTutorial = $this->isNewUser && !session()->has('tutorial_shown_' . $user->id);
     }
 
-    /**
-     * NEW METHOD: Dismiss tutorial
-     */
     public function dismissTutorial(): void
     {
         $this->showTutorial = false;
-        // Mark tutorial as shown for this session
         if (Auth::check()) {
             session()->put('tutorial_shown_' . Auth::id(), true);
         }
     }
 
     /**
-     * NEW METHOD: Show tutorial manually
+     * PERBAIKAN: Kirim event browser untuk membuka tutorial.
      */
     public function showTutorialManually(): void
     {
-        $this->showTutorial = true;
+        // $this->showTutorial = true; // Baris ini tidak lagi efektif setelah halaman dimuat.
+        $this->dispatch('open-tutorial'); // Perintah ini mengirim event 'open-tutorial' ke browser.
     }
 
     private function getTestIcon(string $testType): string

@@ -18,9 +18,10 @@
     </div>
     @endif
 
-    {{-- NEW: Tutorial/Panduan Interaktif menggunakan Alpine.js --}}
+    {{-- PERBAIKAN: Tambahkan listener @open-tutorial.window="open = true" --}}
     @if(Auth::check())
     <div x-data="{ open: @json($showTutorial), currentStep: 1, totalSteps: 4 }" 
+         @open-tutorial.window="open = true" {{-- TAMBAHKAN LISTENER INI --}}
          x-show="open" 
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0 transform scale-90"
