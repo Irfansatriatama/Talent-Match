@@ -101,22 +101,49 @@ class PairwiseInterdependenciesMatrix extends Component
 
     public function updatedMatrixValues($value, $key)
     {
-        // Pecah key 'rowId.colId' untuk mendapatkan ID
+        // Parse the key to get row and column IDs
         [$rowId, $colId] = explode('.', $key);
-
-        // Pastikan kita tidak memproses diagonal utama (nilai selalu 1)
+        
+        // Skip if this is a diagonal element (always 1)
         if ($rowId == $colId) {
+            $this->matrixValues[$rowId][$colId] = 1;
             return;
         }
-
-        // Konversi nilai input menjadi float
+        
+        // Convert input value to float
         $floatValue = (float) $value;
-
-        // Jika nilai yang dimasukkan valid (bukan 0),
-        // langsung hitung dan perbarui nilai kebalikannya.
-        if ($floatValue > 0) {
-            $this->matrixValues[$colId][$rowId] = round(1 / $floatValue, 3);
+        
+        // Validation: ensure value is within valid range
+        if ($floatValue < 0.11 || $floatValue > 9) {
+            // Reset to previous value or default
+            if (!isset($this->matrixValues[$rowId][$colId])) {
+                $this->matrixValues[$rowId][$colId] = 1;
+            }
+            $this->addError("matrixValues.{$rowId}.{$colId}", 'Nilai harus antara 0.11 (1/9) dan 9');
+            return;
         }
+        
+        // Clear any previous errors for this field
+        $this->resetErrorBag("matrixValues.{$rowId}.{$colId}");
+        $this->resetErrorBag("matrixValues.{$colId}.{$rowId}");
+        
+        // Update the current cell
+        $this->matrixValues[$rowId][$colId] = $floatValue;
+        
+        // Calculate and update the reciprocal cell
+        if ($floatValue > 0) {
+            $reciprocalValue = round(1 / $floatValue, 4);
+            $this->matrixValues[$colId][$rowId] = $reciprocalValue;
+        }
+        
+        // Reset calculation results since matrix has changed
+        $this->consistencyRatio = null;
+        $this->isConsistent = null;
+        $this->priorityVector = [];
+        $this->calculationResult = null;
+        
+        // Optional: Auto-calculate consistency after each change (can be disabled for performance)
+        // $this->recalculateConsistency();
     }
 
     public function recalculateConsistency()

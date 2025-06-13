@@ -68,22 +68,33 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($alternativesToCompare as $rowIndex => $rowCand)
-                                <tr wire:key="alt-row-{{ $rowCand->id }}">
+                            @foreach ($alternativesToCompare as $rowIndex => $rowElement)
+                                <tr wire:key="row-{{ $rowElement->id }}">
                                     <td class="text-start text-sm font-weight-bold align-middle">
-                                        {{ $rowCand->name }}
+                                        {{ $rowElement->name }}
                                     </td>
-                                    @foreach ($alternativesToCompare as $colIndex => $colCand)
-                                        <td class="p-1 align-middle" wire:key="alt-cell-{{ $rowCand->id }}-{{ $colCand->id }}">
+                                    @foreach ($alternativesToCompare as $colIndex => $colElement)
+                                        <td class="p-1 align-middle" wire:key="cell-{{ $rowElement->id }}-{{ $colElement->id }}">
                                             <div class="input-group input-group-outline">
-                                                @if ($rowCand->id == $colCand->id)
-                                                    <input type="text" class="form-control form-control-sm text-center" value="1" readonly disabled>
+                                                @if ($rowElement->id == $colElement->id)
+                                                    {{-- Diagonal cells are always 1 --}}
+                                                    <input type="text" 
+                                                        class="form-control form-control-sm text-center bg-light" 
+                                                        value="1" 
+                                                        readonly 
+                                                        disabled>
                                                 @else
-                                                    <input type="number" step="any" min="0.11" max="9"
-                                                        wire:model.live="matrixValues.{{ $rowCand->id }}.{{ $colCand->id }}"
-                                                        class="form-control form-control-sm text-center @error('matrixValues.'.$rowCand->id.'.'.$colCand->id) is-invalid @enderror"
-                                                        @if ($rowIndex > $colIndex) readonly style="background-color: #f0f2f5; color: #6c757d;" @endif
-                                                    >
+                                                    {{-- All non-diagonal cells are editable --}}
+                                                    <input type="number" 
+                                                        step="any" 
+                                                        min="0.11" 
+                                                        max="9"
+                                                        wire:model.live.debounce.500ms="matrixValues.{{ $rowElement->id }}.{{ $colElement->id }}"
+                                                        class="form-control form-control-sm text-center @error('matrixValues.'.$rowElement->id.'.'.$colElement->id) is-invalid @enderror"
+                                                        placeholder="{{ isset($matrixValues[$rowElement->id][$colElement->id]) ? '' : '?' }}">
+                                                    @error('matrixValues.'.$rowElement->id.'.'.$colElement->id)
+                                                        <div class="invalid-feedback text-xs">{{ $message }}</div>
+                                                    @enderror
                                                 @endif
                                             </div>
                                         </td>
@@ -95,6 +106,13 @@
                     @foreach ($errors->get('matrixValues.*.*') as $message)
                         <div class="text-danger text-xs ps-1">{{ $message }}</div>
                     @endforeach
+                </div>
+
+                {{-- IMPLEMENTASI PANDUAN PENGISIAN MATRIKS --}}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <x-anp-matrix-guide />
+                    </div>
                 </div>
 
                 {{-- AREA BAWAH: 2 KOLOM --}}

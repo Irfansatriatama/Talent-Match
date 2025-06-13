@@ -31,19 +31,32 @@
                         </thead>
                         <tbody>
                             @foreach ($sourceElementsToCompare as $rowIndex => $rowElement)
-                                <tr wire:key="inter-row-{{ $rowElement->id }}">
-                                    <td class="text-start text-sm font-weight-bold align-middle">{{ $rowElement->name }}</td>
+                                <tr wire:key="row-{{ $rowElement->id }}">
+                                    <td class="text-start text-sm font-weight-bold align-middle">
+                                        {{ $rowElement->name }}
+                                    </td>
                                     @foreach ($sourceElementsToCompare as $colIndex => $colElement)
-                                        <td class="p-1 align-middle" wire:key="inter-cell-{{ $rowElement->id }}-{{ $colElement->id }}">
+                                        <td class="p-1 align-middle" wire:key="cell-{{ $rowElement->id }}-{{ $colElement->id }}">
                                             <div class="input-group input-group-outline">
                                                 @if ($rowElement->id == $colElement->id)
-                                                    <input type="text" class="form-control form-control-sm text-center" value="1" readonly disabled>
+                                                    {{-- Diagonal cells are always 1 --}}
+                                                    <input type="text" 
+                                                        class="form-control form-control-sm text-center bg-light" 
+                                                        value="1" 
+                                                        readonly 
+                                                        disabled>
                                                 @else
-                                                    <input type="number" step="any" min="0.11" max="9"
-                                                        wire:model.live.debounce.300ms="matrixValues.{{ $rowElement->id }}.{{ $colElement->id }}"
-                                                        class="form-control form-control-sm text-center"
-                                                        @if ($rowIndex > $colIndex) readonly style="background-color: #f0f2f5;" @endif
-                                                    >
+                                                    {{-- All non-diagonal cells are editable --}}
+                                                    <input type="number" 
+                                                        step="any" 
+                                                        min="0.11" 
+                                                        max="9"
+                                                        wire:model.live.debounce.500ms="matrixValues.{{ $rowElement->id }}.{{ $colElement->id }}"
+                                                        class="form-control form-control-sm text-center @error('matrixValues.'.$rowElement->id.'.'.$colElement->id) is-invalid @enderror"
+                                                        placeholder="{{ isset($matrixValues[$rowElement->id][$colElement->id]) ? '' : '?' }}">
+                                                    @error('matrixValues.'.$rowElement->id.'.'.$colElement->id)
+                                                        <div class="invalid-feedback text-xs">{{ $message }}</div>
+                                                    @enderror
                                                 @endif
                                             </div>
                                         </td>
@@ -54,6 +67,13 @@
                     </table>
                 </div>
             @endif
+        </div>
+    </div>
+
+    {{-- IMPLEMENTASI PANDUAN PENGISIAN MATRIKS --}}
+    <div class="row mb-4">
+        <div class="col-12">
+            <x-anp-matrix-guide />
         </div>
     </div>
 
