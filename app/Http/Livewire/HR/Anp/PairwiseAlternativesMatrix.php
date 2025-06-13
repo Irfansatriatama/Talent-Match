@@ -134,20 +134,6 @@ class PairwiseAlternativesMatrix extends Component
         $this->dispatch('notify', ['message' => 'Matriks diisi otomatis berdasarkan skor tes. Harap periksa dan sesuaikan.', 'type' => 'info']);
     }
 
-
-    // public function updatedMatrixValues($value, $key)
-    // {
-    //     [$rowId, $colId] = explode('.', $key);
-    //     $rowId = (int)$rowId;
-    //     $colId = (int)$colId;
-    //     $value = (float)$value;
-
-    //     if ($rowId == $colId) {
-    //         $this->matrixValues[$rowId][$colId] = 1;
-    //     }
-        
-    // } tanpa resiprokal
-
     public function updatedMatrixValues($value, $key)
     {
         [$rowId, $colId] = explode('.', $key);

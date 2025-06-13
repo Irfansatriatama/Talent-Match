@@ -37,7 +37,6 @@ class AnpCalculationService
                 $priorityData = $this->gatherAllValidPriorityVectors($analysis);
                 Log::info("[ANP ID:{$analysis->id}] Berhasil mengumpulkan data prioritas.");
                 
-                // Debug: Log cluster weights
                 $this->debugLogClusterWeights($analysis, $priorityData);
 
                 $unweightedSupermatrix = $this->buildUnweightedSupermatrix($analysis, $priorityData);
@@ -176,7 +175,6 @@ class AnpCalculationService
             'alternativeComparisons.consistency'
         ]);
 
-        // Verify network structure
         $this->verifyNetworkStructure($analysis);
 
         // Map clusters
@@ -317,7 +315,6 @@ class AnpCalculationService
             }
         }
 
-        // 2. CRITICAL FIX: Add feedback from clusters to alternatives
         // This creates the necessary feedback loop for ANP to work properly
         $alternativeIndices = [];
         $clusterIndices = [];
@@ -571,7 +568,7 @@ class AnpCalculationService
                 return $limitMatrix;
             }
             
-            // --- PENAMBAHAN: Logika untuk deteksi dan penanganan siklus ---
+            // Logika untuk deteksi dan penanganan siklus
             // Cek secara periodik setelah beberapa iterasi awal
             if ($iteration > 10 && $iteration % 2 != 0) {
                 $cycleDiff = 0;
@@ -594,7 +591,7 @@ class AnpCalculationService
                 }
             }
             
-            // --- PENAMBAHAN: Simpan matriks untuk perbandingan siklus berikutnya ---
+            // Simpan matriks untuk perbandingan siklus berikutnya
             if ($iteration % 2 == 0) {
                 $previousMatrixForCycleCheck = $poweredMatrix;
             }

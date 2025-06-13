@@ -134,10 +134,7 @@ class User extends Authenticatable
         return $completedCount >= $requiredTestCount;
     }
 
-    /**
-     * UPDATED METHOD: Get test completion percentage
-     * Sekarang cek dari berbagai sumber
-     */
+    
     public function getTestCompletionPercentage(int $totalTests = 3): float
     {
         if ($totalTests === 0) {
