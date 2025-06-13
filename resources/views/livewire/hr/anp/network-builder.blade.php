@@ -7,6 +7,29 @@
         <div class="card-body">
             <x-anp-stepper currentStep="2" />
 
+            <!-- PERUBAHAN: Tambahkan panduan langkah demi langkah -->
+            <div class="alert alert-info text-white mb-4">
+                <h6 class="text-white mb-2"><i class="material-icons text-sm align-middle">lightbulb</i> Panduan Pembuatan Jaringan ANP</h6>
+                <ol class="mb-0 ps-3">
+                    <li class="mb-2">
+                        <strong>Langkah 1: Buat Cluster Utama.</strong><br>
+                        Kelompokkan kriteria Anda ke dalam kategori besar (misal: 'Hard Skills', 'Soft Skills', 'Personality').
+                    </li>
+                    <li class="mb-2">
+                        <strong>Langkah 2: Tambah Elemen Kriteria.</strong><br>
+                        Masukkan kriteria spesifik ke dalam setiap cluster yang telah Anda buat (misal: dalam 'Hard Skills' → 'Programming', 'Analytical Thinking').
+                    </li>
+                    <li class="mb-2">
+                        <strong>Langkah 3 (Opsional): Definisikan Interdependensi.</strong><br>
+                        Jika Anda merasa ada kriteria yang saling mempengaruhi, hubungkan di sini. Ini adalah inti dari ANP yang membedakannya dari AHP.
+                    </li>
+                    <li>
+                        <strong>Langkah 4: Lanjutkan.</strong><br>
+                        Setelah struktur jaringan selesai, klik tombol 'Lanjutkan ke Perbandingan Kriteria' di bawah.
+                    </li>
+                </ol>
+            </div>
+
             <div class="row">
                 <div class="col-lg-5">
                     {{-- Form Tambah Cluster --}}

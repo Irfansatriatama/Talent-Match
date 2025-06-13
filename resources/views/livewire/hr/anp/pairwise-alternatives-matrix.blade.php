@@ -22,11 +22,36 @@
                     Minimal 2 kandidat diperlukan untuk perbandingan.
                 </div>
             @else
-                {{-- TOMBOL ISI OTOMATIS --}}
-                <div class="d-flex justify-content-end mb-3">
-                    <button wire:click="autoFillMatrix" class="btn btn-sm btn-outline-secondary mb-0">
-                        <i class="material-icons text-sm">auto_fix_high</i> Isi Otomatis dari Skor Tes
-                    </button>
+                <!-- PERUBAHAN: Hapus tombol isi otomatis dan tambahkan kartu daftar kandidat -->
+                <div class="card bg-light mb-4">
+                    <div class="card-header pb-2">
+                        <h6 class="mb-0">Kandidat yang Dibandingkan</h6>
+                        <p class="text-sm mb-0">Klik "Lihat Detail" untuk melihat profil lengkap kandidat di tab baru</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            @foreach ($alternativesToCompare as $candidate)
+                                <div class="col-md-6 mb-3">
+                                    <div class="d-flex align-items-center justify-content-between p-2 border rounded">
+                                        <div class="d-flex align-items-center">
+                                            <img src="https://ui-avatars.com/api/?name={{ urlencode($candidate->name) }}&size=40&background=random" 
+                                                 class="avatar avatar-sm me-2" 
+                                                 alt="{{ $candidate->name }}">
+                                            <div>
+                                                <h6 class="mb-0 text-sm">{{ $candidate->name }}</h6>
+                                                <p class="text-xs text-muted mb-0">{{ $candidate->email }}</p>
+                                            </div>
+                                        </div>
+                                        <a href="{{ route('hr.detail-candidate', ['candidate' => $candidate->id]) }}" 
+                                           target="_blank" 
+                                           class="btn btn-sm btn-outline-primary mb-0">
+                                            <i class="material-icons text-sm">open_in_new</i> Lihat Detail
+                                        </a>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
                 </div>
 
                 {{-- MATRIKS PERBANDINGAN --}}

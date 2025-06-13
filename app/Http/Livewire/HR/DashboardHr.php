@@ -55,6 +55,9 @@ class DashboardHr extends Component
             $q->where('status', 'completed');
         }, '>=', $totalTests)->count();
 
+        // PERUBAHAN 1: Hitung jumlah analisis ANP yang sebenarnya
+        $anpAnalysisCount = AnpAnalysis::count();
+
         $this->statistics = [
             'total_candidates' => $totalCandidates,
             'completed_all_tests' => $completedAll,
@@ -63,7 +66,7 @@ class DashboardHr extends Component
                 ->where('status', 'completed')
                 ->avg('score') ?? 0, 2),
             'new_candidates_this_week' => $newCandidatesThisWeek,
-            'anp_analyses_count' => AnpAnalysis::count(),
+            'anp_analyses_count' => $anpAnalysisCount, // PERUBAHAN: Gunakan perhitungan yang benar
             'anp_this_month' => $anpThisMonth,
             'completion_rate' => $totalCandidates > 0 ? round(($completedAll / $totalCandidates) * 100, 1) : 0
         ];

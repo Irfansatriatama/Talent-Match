@@ -22,7 +22,7 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <div class="input-group input-group-outline @error('job_position_id') is-invalid @enderror">
-                            <select id="job_position_id" wire:model.defer="job_position_id" class="form-control">
+                            <select id="job_position_id" wire:model.live="job_position_id" class="form-control">
                                 <option value="">-- Pilih Posisi Jabatan (Goal) --</option>
                                 @foreach($jobPositions as $position)
                                     <option value="{{ $position->id }}">{{ $position->name }}</option>
@@ -33,40 +33,123 @@
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <label>Pilih Kandidat (Alternatif)</label>
-                    <div class="card p-3 @error('selected_candidates') border-danger @enderror" style="max-height: 250px; overflow-y: auto;">
-                        <div class="row">
-                        @forelse($availableCandidates as $candidate)
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" wire:model.defer="selected_candidates" value="{{ $candidate->id }}" id="candidate_{{ $candidate->id }}">
-                                    <label class="form-check-label" for="candidate_{{ $candidate->id }}">
-                                        {{ $candidate->name }} <span class="text-xs text-secondary">({{ $candidate->email }})</span>
-                                    </label>
+
+                <!-- Tampilkan kandidat hanya jika posisi sudah dipilih -->
+                @if($showCandidateList)
+                    <div class="mb-3" wire:key="candidate-section-{{ $job_position_id }}">
+                        <label class="form-label fw-bold">Pilih Kandidat (Alternatif)</label>
+                        
+                        <!-- Informasi jumlah kandidat -->
+                        <p class="text-sm text-muted mb-2">
+                            Ditemukan <strong>{{ $availableCandidates->count() }}</strong> kandidat yang telah melamar posisi ini 
+                            dan sudah menyelesaikan semua {{ $totalTests }} tes yang diwajibkan.
+                        </p>
+                        
+                        @if($availableCandidates->count() > 0)
+                            <div class="card border p-3 @error('selected_candidates') border-danger @enderror" style="max-height: 300px; overflow-y: auto;">
+                                <div class="row">
+                                    <!-- Tombol Select All/Deselect All -->
+                                    <div class="col-12 mb-2">
+                                        <button type="button" 
+                                                wire:click="$set('selected_candidates', {{ $availableCandidates->pluck('id')->toJson() }})" 
+                                                class="btn btn-sm btn-outline-primary me-2">
+                                            Pilih Semua
+                                        </button>
+                                        <button type="button" 
+                                                wire:click="$set('selected_candidates', [])" 
+                                                class="btn btn-sm btn-outline-secondary">
+                                            Batal Pilih Semua
+                                        </button>
+                                    </div>
+                                    
+                                    @foreach($availableCandidates as $candidate)
+                                        <div class="col-md-6 mb-2" wire:key="candidate-{{ $candidate->id }}">
+                                            <div class="form-check ps-0">
+                                                <label class="form-check-label d-flex align-items-center" for="candidate_{{ $candidate->id }}">
+                                                    <input class="form-check-input me-2" 
+                                                           type="checkbox" 
+                                                           wire:model.defer="selected_candidates" 
+                                                           value="{{ $candidate->id }}" 
+                                                           id="candidate_{{ $candidate->id }}">
+                                                    <div>
+                                                        <span class="fw-bold">{{ $candidate->name }}</span>
+                                                        <br>
+                                                        <small class="text-muted">{{ $candidate->email }}</small>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    @endforeach
                                 </div>
                             </div>
-                        @empty
-                            <p class="text-center text-secondary">Tidak ada kandidat yang tersedia.</p>
-                        @endforelse
-                        </div>
+                            
+                            <!-- Counter pilihan -->
+                            @if(count($selected_candidates) > 0)
+                                <p class="text-sm text-info mt-2">
+                                    <i class="material-icons text-sm align-middle">check_circle</i>
+                                    {{ count($selected_candidates) }} kandidat dipilih
+                                </p>
+                            @endif
+                        @else
+                            <div class="alert alert-warning text-white">
+                                <i class="material-icons text-sm align-middle">warning</i>
+                                <strong>Tidak ada kandidat yang memenuhi kriteria untuk posisi ini.</strong>
+                                <br>
+                                <small>Pastikan ada kandidat yang:</small>
+                                <ul class="mb-0 mt-1">
+                                    <li>Telah mendaftar untuk posisi {{ $jobPositions->find($job_position_id)->name ?? 'ini' }}</li>
+                                    <li>Sudah menyelesaikan semua {{ $totalTests }} tes yang diwajibkan</li>
+                                </ul>
+                            </div>
+                        @endif
+                        @error('selected_candidates') <div class="text-danger text-xs ps-1 mt-1">{{ $message }}</div> @enderror
                     </div>
-                    @error('selected_candidates') <div class="text-danger text-xs ps-1">{{ $message }}</div> @enderror
-                </div>
+                @else
+                    <!-- Pesan instruksi jika posisi belum dipilih -->
+                    <div class="alert alert-info text-white">
+                        <i class="material-icons text-sm align-middle">info</i>
+                        Silakan pilih posisi jabatan terlebih dahulu untuk melihat daftar kandidat yang tersedia.
+                    </div>
+                @endif
                 
                 <div class="mb-3">
+                    <label class="form-label">Deskripsi (Opsional)</label>
                     <div class="input-group input-group-outline">
-                        <textarea id="description" wire:model.defer="description" class="form-control" rows="3" placeholder="Deskripsi (Opsional)"></textarea>
+                        <textarea id="description" 
+                                  wire:model.defer="description" 
+                                  class="form-control" 
+                                  rows="3" 
+                                  placeholder="Tambahkan catatan atau deskripsi untuk analisis ini..."></textarea>
                     </div>
                 </div>
 
-                <div class="text-end">
-                    <button type="submit" class="btn bg-gradient-primary">
-                        <span wire:loading.remove wire:target="saveAnalysis">Simpan & Lanjutkan</span>
-                        <span wire:loading wire:target="saveAnalysis">Menyimpan...</span>
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="{{ route('hr.anp.analysis.index') }}" class="btn btn-outline-secondary">
+                        <i class="material-icons text-sm">arrow_back</i> Kembali
+                    </a>
+                    <button type="submit" 
+                            class="btn bg-gradient-primary" 
+                            @if(!$showCandidateList || $availableCandidates->count() < 2 || count($selected_candidates) < 2) disabled @endif>
+                        <span wire:loading.remove wire:target="saveAnalysis">
+                            <i class="material-icons text-sm">save</i> Simpan & Lanjutkan
+                        </span>
+                        <span wire:loading wire:target="saveAnalysis">
+                            <i class="material-icons text-sm">hourglass_empty</i> Menyimpan...
+                        </span>
                     </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+@push('js')
+<script>
+    // Debug untuk melihat Livewire component state
+    document.addEventListener('livewire:load', function () {
+        Livewire.on('debugState', function (data) {
+            console.log('Livewire State:', data);
+        });
+    });
+</script>
+@endpush

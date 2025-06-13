@@ -5,8 +5,10 @@ namespace App\Http\Livewire\HR\Anp;
 use App\Models\AnpAnalysis;
 use App\Models\JobPosition;
 use App\Models\User;
+use App\Models\Test;
 use App\Models\AnpNetworkStructure;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 
 class CreateAnalysisForm extends Component
@@ -18,6 +20,13 @@ class CreateAnalysisForm extends Component
 
     public $jobPositions = [];
     public $availableCandidates = [];
+    
+    // Flag untuk menampilkan/menyembunyikan daftar kandidat
+    public $showCandidateList = false;
+    
+    // Variabel untuk debugging
+    public $debugInfo = '';
+    public $totalTests = 3;
 
     protected $rules = [
         'name' => 'required|string|max:255',
@@ -37,7 +46,75 @@ class CreateAnalysisForm extends Component
     public function mount()
     {
         $this->jobPositions = JobPosition::orderBy('name')->get();
-        $this->availableCandidates = User::where('role', User::ROLE_CANDIDATE)->orderBy('name')->get();
+        $this->availableCandidates = collect();
+        
+        // Hitung jumlah total tes yang ada
+        $this->totalTests = Test::count() ?: 3;
+        
+        Log::info('CreateAnalysisForm mounted', [
+            'total_tests' => $this->totalTests,
+            'job_positions_count' => $this->jobPositions->count()
+        ]);
+    }
+    
+    // Hook untuk menangani perubahan pada job_position_id
+    public function updatedJobPositionId($value)
+    {
+        Log::info('Job position updated', ['value' => $value]);
+        
+        if ($value) {
+            // Reset data sebelumnya
+            $this->availableCandidates = collect();
+            $this->selected_candidates = [];
+            $this->debugInfo = '';
+            
+            // Query untuk mendapatkan semua kandidat dengan posisi yang dipilih
+            $allCandidatesQuery = User::where('role', User::ROLE_CANDIDATE)
+                ->where('job_position_id', $value);
+            
+            $totalCandidatesForPosition = $allCandidatesQuery->count();
+            
+            Log::info('Candidates for position', [
+                'position_id' => $value,
+                'total_candidates' => $totalCandidatesForPosition
+            ]);
+            
+            // Query kandidat yang sudah menyelesaikan semua tes
+            $completedCandidatesQuery = User::where('role', User::ROLE_CANDIDATE)
+                ->where('job_position_id', $value)
+                ->with(['testProgress' => function($query) {
+                    $query->where('status', 'completed');
+                }])
+                ->get()
+                ->filter(function ($user) {
+                    $completedTestsCount = $user->testProgress
+                        ->where('status', 'completed')
+                        ->pluck('test_id')
+                        ->unique()
+                        ->count();
+                    
+                    Log::info('Checking candidate', [
+                        'user_id' => $user->id,
+                        'name' => $user->name,
+                        'completed_tests' => $completedTestsCount,
+                        'required_tests' => $this->totalTests
+                    ]);
+                    
+                    return $completedTestsCount >= $this->totalTests;
+                });
+            
+            $this->availableCandidates = $completedCandidatesQuery;
+            
+            // Tampilkan daftar kandidat
+            $this->showCandidateList = true;
+            
+        } else {
+            // Reset jika posisi tidak dipilih
+            $this->showCandidateList = false;
+            $this->availableCandidates = collect();
+            $this->selected_candidates = [];
+            $this->debugInfo = '';
+        }
     }
 
     public function saveAnalysis()
@@ -45,11 +122,17 @@ class CreateAnalysisForm extends Component
         $this->validate();
 
         try {
+            // Cek apakah ada struktur jaringan default
             $defaultStructure = AnpNetworkStructure::first();
 
             if (!$defaultStructure) {
-                session()->flash('error', 'Kritis: Tidak ditemukan struktur jaringan default di database. Harap jalankan `php artisan db:seed`.');
-                return;
+                // Buat struktur default jika belum ada
+                $defaultStructure = AnpNetworkStructure::create([
+                    'name' => 'Default ANP Structure',
+                    'description' => 'Struktur jaringan default untuk analisis ANP'
+                ]);
+                
+                Log::info('Created default ANP network structure', ['id' => $defaultStructure->id]);
             }
 
             $analysis = AnpAnalysis::create([
@@ -65,12 +148,22 @@ class CreateAnalysisForm extends Component
 
             session()->put('current_anp_analysis_id', $analysis->id);
 
+            Log::info('ANP Analysis created successfully', [
+                'analysis_id' => $analysis->id,
+                'candidates_count' => count($this->selected_candidates)
+            ]);
+
             session()->flash('message', 'Analisis ANP baru berhasil dibuat. Silakan lanjutkan ke definisi jaringan.');
 
             return redirect()->route('hr.anp.analysis.network.define', $analysis->id);
 
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal membuat analisis ANP: Terjadi kesalahan pada server. ' . $e->getMessage());
+            Log::error('Failed to create ANP analysis', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            session()->flash('error', 'Gagal membuat analisis ANP: ' . $e->getMessage());
         }
     }
 
