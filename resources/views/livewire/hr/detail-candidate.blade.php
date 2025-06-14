@@ -65,7 +65,7 @@
                                         </span>
                                     </span>
                                     <span class="text-xs">Selesai pada: 
-                                        <span class="text-dark ms-sm-2 font-weight-bold">{{ $result['completed_at'] ?? 'N/A' }}</span>
+                                        <span class="text-dark ms-sm-2 font-weight-bold">{{ isset($result['completed_at']) ? \Carbon\Carbon::parse($result['completed_at'])->locale('id')->tz('Asia/Jakarta')->isoFormat('D MMMM YYYY, HH:mm') . ' WIB' : 'N/A' }}</span>
                                     </span>
                                 </div>
                             </li>
