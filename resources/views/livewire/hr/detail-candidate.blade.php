@@ -35,7 +35,7 @@
                             <li class="list-group-item border-0 ps-0 pt-0 text-sm"><strong class="text-dark">Nama Lengkap:</strong> &nbsp; {{ $candidate->name }}</li>
                             <li class="list-group-item border-0 ps-0 text-sm"><strong class="text-dark">Email:</strong> &nbsp; {{ $candidate->email }}</li>
                             <li class="list-group-item border-0 ps-0 text-sm"><strong class="text-dark">Telepon:</strong> &nbsp; {{ $candidate->phone ?? '-' }}</li>
-                            <li class="list-group-item border-0 ps-0 text-sm"><strong class="text-dark">Terdaftar pada:</strong> &nbsp; {{ $candidate->created_at->format('d M Y') }}</li>
+                            <li class="list-group-item border-0 ps-0 text-sm"><strong class="text-dark">Terdaftar pada:</strong> &nbsp; {{ $candidate->created_at->locale('id')->tz('Asia/Jakarta')->isoFormat('D MMMM YYYY, HH:mm') }} WIB</li>
                         </ul>
                     </div>
                 </div>
