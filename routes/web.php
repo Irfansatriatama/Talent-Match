@@ -20,7 +20,7 @@ use App\Http\Livewire\Candidate\Assessment\AssessmentMbti;
 use App\Http\Livewire\HR\Setting;
 use App\Http\Livewire\HR\DashboardHr;
 use App\Http\Livewire\HR\Candidate;
-use App\Http\Livewire\HR\Setting;
+use App\Http\Livewire\HR\Setting as HRSetting;
 use App\Http\Livewire\HR\DetailCandidate;
 
 // ANP Livewire
