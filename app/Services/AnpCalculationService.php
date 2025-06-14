@@ -100,9 +100,8 @@ class AnpCalculationService
     public function calculateEigenvectorAndCR(array $matrix): array
     {
         $n = count($matrix);
-        if ($n === 0) {
-            return ['priority_vector' => [], 'is_consistent' => true, 'consistency_ratio' => 0.0, 'lambda_max' => 0, 'consistency_index' => 0, 'random_index' => 0];
-        }
+        
+        if ($n === 0) return ['priority_vector' => [], 'is_consistent' => true, 'consistency_ratio' => 0.0, 'lambda_max' => 0, 'consistency_index' => 0, 'random_index' => 0];
         if ($n === 1) {
             $key = array_key_first($matrix);
             return ['priority_vector' => [$key => 1.0], 'is_consistent' => true, 'consistency_ratio' => 0.0, 'lambda_max' => 1, 'consistency_index' => 0, 'random_index' => 0];
@@ -111,41 +110,86 @@ class AnpCalculationService
         $keys = array_keys($matrix);
         $numericMatrix = array_values(array_map('array_values', $matrix));
         
-        $columnSums = array_fill(0, $n, 0);
+        // Validasi dan konversi tipe data ke float
+        for ($i = 0; $i < $n; $i++) {
+            for ($j = 0; $j < $n; $j++) {
+                if (!is_numeric($numericMatrix[$i][$j]) || $numericMatrix[$i][$j] <= 0) {
+                    Log::warning("Invalid matrix value at [{$i}][{$j}]: " . $numericMatrix[$i][$j]);
+                    $numericMatrix[$i][$j] = 1.0;
+                }
+                $numericMatrix[$i][$j] = (float) $numericMatrix[$i][$j];
+            }
+        }
+        
+        // Langkah 1: Hitung jumlah setiap kolom
+        $columnSums = array_fill(0, $n, 0.0);
         for ($j = 0; $j < $n; $j++) {
             for ($i = 0; $i < $n; $i++) {
                 $columnSums[$j] += $numericMatrix[$i][$j];
             }
         }
 
-        $priorityVectorNumeric = array_fill(0, $n, 0);
+        // Langkah 2: Hitung Priority Vector (Eigenvector)
+        $priorityVectorNumeric = array_fill(0, $n, 0.0);
         for ($i = 0; $i < $n; $i++) {
-            $rowSum = 0;
+            $rowSum = 0.0;
             for ($j = 0; $j < $n; $j++) {
-                $normalizedValue = $columnSums[$j] > 0 ? $numericMatrix[$i][$j] / $columnSums[$j] : 0;
-                $rowSum += $normalizedValue;
+                $rowSum += ($columnSums[$j] > 0) ? $numericMatrix[$i][$j] / $columnSums[$j] : 0;
             }
             $priorityVectorNumeric[$i] = $rowSum / $n;
         }
 
-        $weightedSumVector = array_fill(0, $n, 0);
-        for ($i = 0; $i < $n; $i++) {
-            for ($j = 0; $j < $n; $j++) {
-                $weightedSumVector[$i] += $numericMatrix[$i][$j] * $priorityVectorNumeric[$j];
-            }
-        }
+        // // PERBAIKAN KRITIS: Hitung Lambda Max dengan metode yang benar
+        // $lambdaMax = 0.0;
+        // for ($i = 0; $i < $n; $i++) {
+        //     $weightedSum = 0.0;
+        //     for ($j = 0; $j < $n; $j++) {
+        //         $weightedSum += $numericMatrix[$i][$j] * $priorityVectorNumeric[$j];
+        //     }
+            
+        //     if ($priorityVectorNumeric[$i] > 0) {
+        //         $lambdaMax += $weightedSum / $priorityVectorNumeric[$i];
+        //     }
+        // }
+        // $lambdaMax /= $n; // Rata-rata dari semua rasio// Hitung vektor hasil: A * w
         
-        $lambdaMax = 0;
+        
+        $weightedVector = [];
         for ($i = 0; $i < $n; $i++) {
-            if ($priorityVectorNumeric[$i] > 1e-9) {
-                $lambdaMax += $weightedSumVector[$i] / $priorityVectorNumeric[$i];
+            $sum = 0.0;
+            for ($j = 0; $j < $n; $j++) {
+                $sum += $numericMatrix[$i][$j] * $priorityVectorNumeric[$j];
+            }
+            $weightedVector[$i] = $sum;
+        }
+
+        // Hitung λmax: Σ(weightedVector[i] / w[i]) / n
+        $lambdaMax = 0.0;
+        for ($i = 0; $i < $n; $i++) {
+            if ($priorityVectorNumeric[$i] > 0) {
+                $lambdaMax += $weightedVector[$i] / $priorityVectorNumeric[$i];
             }
         }
-        $lambdaMax = ($n > 0) ? $lambdaMax / $n : 0;
+        $lambdaMax /= $n;
 
-        $ci = ($n <= 2) ? 0 : ($lambdaMax - $n) / ($n - 1);
-        $ri = $this->randomIndices[$n] ?? end($this->randomIndices);
+        // Langkah 4: Hitung Consistency Index (CI)
+        $ci = ($n > 2) ? ($lambdaMax - $n) / ($n - 1) : 0;
+        
+        // Langkah 5: Dapatkan Random Index (RI)
+        $ri = $this->randomIndices[$n] ?? $this->randomIndices[10] ?? 1.49;
+        
+        // Langkah 6: Hitung Consistency Ratio (CR)
         $cr = ($ri > 0) ? $ci / $ri : 0;
+
+        // Log untuk debugging
+        Log::info("ANP Calculation Debug:", [
+            'matrix_size' => $n,
+            'lambda_max' => round($lambdaMax, 6),
+            'consistency_index' => round($ci, 6),
+            'random_index' => $ri,
+            'consistency_ratio' => round($cr, 6),
+            'is_consistent' => round($cr, 6) <= $this->consistencyThreshold
+        ]);
 
         return [
             'priority_vector' => array_combine($keys, $priorityVectorNumeric),

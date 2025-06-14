@@ -200,8 +200,8 @@ class PairwiseCriteriaMatrix extends Component
         $service = new \App\Services\AnpCalculationService();
         $matrixForCalc = [];
         
-        foreach ($this->alternativesToCompare as $rowAlt) {
-            foreach ($this->alternativesToCompare as $colAlt) {
+        foreach ($this->elementsToCompare as $rowAlt) {
+            foreach ($this->elementsToCompare as $colAlt) {
                 if (isset($this->matrixValues[$rowAlt->id][$colAlt->id])) {
                     $matrixForCalc[$rowAlt->id][$colAlt->id] = (float) $this->matrixValues[$rowAlt->id][$colAlt->id];
                 }
