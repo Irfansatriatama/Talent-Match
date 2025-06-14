@@ -17,18 +17,19 @@ use App\Http\Livewire\Candidate\Assessment\AssessmentRiasec;
 use App\Http\Livewire\Candidate\Assessment\AssessmentMbti;
 
 // hr components
-use App\Http\Livewire\hr\Setting;
-use App\Http\Livewire\hr\DashboardHr;
-use App\Http\Livewire\hr\Candidate;
-use App\Http\Livewire\hr\DetailCandidate;
+use App\Http\Livewire\HR\Setting;
+use App\Http\Livewire\HR\DashboardHr;
+use App\Http\Livewire\HR\Candidate;
+use App\Http\Livewire\HR\Setting;
+use App\Http\Livewire\HR\DetailCandidate;
 
 // ANP Livewire
-use App\Http\Livewire\Hr\Anp\AnalysisList;
-use App\Http\Livewire\Hr\Anp\CreateAnalysisForm;
-use App\Http\Livewire\Hr\Anp\NetworkBuilder;
-use App\Http\Livewire\Hr\Anp\PairwiseAlternativesMatrix;
-use App\Http\Livewire\Hr\Anp\PairwiseCriteriaMatrix;
-use App\Http\Livewire\Hr\Anp\PairwiseInterdependenciesMatrix;
+use App\Http\Livewire\HR\Anp\AnalysisList;
+use App\Http\Livewire\HR\Anp\CreateAnalysisForm;
+use App\Http\Livewire\HR\Anp\NetworkBuilder;
+use App\Http\Livewire\HR\Anp\PairwiseAlternativesMatrix;
+use App\Http\Livewire\HR\Anp\PairwiseCriteriaMatrix;
+use App\Http\Livewire\HR\Anp\PairwiseInterdependenciesMatrix;
 
 use App\Http\Controllers\AnpAnalysisController;
 
