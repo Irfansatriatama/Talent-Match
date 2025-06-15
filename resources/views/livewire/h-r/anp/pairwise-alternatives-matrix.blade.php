@@ -100,9 +100,6 @@
                             @endforeach
                         </tbody>
                     </table>
-                    @foreach ($errors->get('matrixValues.*.*') as $message)
-                        <div class="text-danger text-xs ps-1">{{ $message }}</div>
-                    @endforeach
                 </div>
 
                 {{-- IMPLEMENTASI PANDUAN PENGISIAN MATRIKS --}}
