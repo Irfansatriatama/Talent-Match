@@ -247,12 +247,12 @@
                                     </div>
                                     <div class="mt-2">
                                         @if($analysis->status == 'completed')
-                                            <a href="{{ route('hr.anp.analysis.show', $analysis->id) }}" 
+                                            <a href="{{ route('HR.anp.analysis.show', $analysis->id) }}" 
                                                class="btn btn-sm bg-gradient-primary mb-0">
                                                 <i class="material-icons text-sm">visibility</i> Lihat Hasil
                                             </a>
                                         @elseif($analysis->status !== 'calculating')
-                                            <a href="{{ route('hr.anp.analysis.network.define', $analysis->id) }}" 
+                                            <a href="{{ route('HR.anp.analysis.network.define', $analysis->id) }}" 
                                                class="btn btn-sm bg-gradient-warning mb-0">
                                                 <i class="material-icons text-sm">play_arrow</i> Lanjutkan Proses
                                             </a>

@@ -15,7 +15,7 @@
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                     <h6 class="m-0 font-weight-bold text-primary">Tabel Peringkat Kandidat</h6>
-                    <a href="{{ route('hr.anp.analysis.index') }}" class="btn btn-sm btn-secondary">
+                    <a href="{{ route('HR.anp.analysis.index') }}" class="btn btn-sm btn-secondary">
                         <i class="fas fa-arrow-left fa-sm text-white-50"></i> Kembali ke Daftar Analisis
                     </a>
                 </div>
@@ -49,7 +49,7 @@
                                             <td class="text-center font-weight-bold align-middle">{{ number_format($result->score, 5) }}</td>
                                             
                                             <td class="text-center align-middle">
-                                                <a href="{{ route('hr.detail-candidate', ['candidate' => $result->candidate->id]) }}" class="btn btn-sm btn-info mb-0">
+                                                <a href="{{ route('HR.detail-candidate', ['candidate' => $result->candidate->id]) }}" class="btn btn-sm btn-info mb-0">
                                                     Lihat Detail
                                                 </a>
                                             </td>

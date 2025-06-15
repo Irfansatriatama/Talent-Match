@@ -147,7 +147,7 @@
                                         </span>
                                     </td>
                                     <td class="align-middle">
-                                        <a href="{{ route('hr.detail-candidate', ['candidate' => $candidate->id]) }}" 
+                                        <a href="{{ route('HR.detail-candidate', ['candidate' => $candidate->id]) }}" 
                                         class="text-secondary font-weight-bold text-xs" 
                                         data-bs-toggle="tooltip" 
                                         data-bs-title="Lihat Detail Kandidat">

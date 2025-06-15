@@ -151,7 +151,7 @@ class DashboardHr extends Component
 
     public function render()
     {
-        return view('livewire.hr.dashboard-hr', [
+        return view('livewire.HR.dashboard-hr', [
             'pageTitle' => 'Dashboard HR'
         ]);
     }

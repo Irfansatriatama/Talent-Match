@@ -121,7 +121,7 @@
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center">
-                    <a href="{{ route('hr.anp.analysis.index') }}" class="btn btn-outline-secondary">
+                    <a href="{{ route('HR.anp.analysis.index') }}" class="btn btn-outline-secondary">
                         <i class="material-icons text-sm">arrow_back</i> Kembali
                     </a>
                     <button type="submit" 

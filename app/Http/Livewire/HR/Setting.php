@@ -29,7 +29,7 @@ class Setting extends Component
 
     public function render()
     {
-        return view('livewire.hr.setting', [
+        return view('livewire.HR.setting', [
             'jobPositions' => JobPosition::paginate(10),
             'pageTitle' => 'Pengaturan Posisi Jabatan'
         ]);

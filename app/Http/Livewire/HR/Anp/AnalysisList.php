@@ -53,7 +53,7 @@ class AnalysisList extends Component
         
         $analyses = $query->orderBy('created_at', 'desc')->paginate($this->perPage);
 
-        return view('livewire.hr.anp.analysis-list', [
+        return view('livewire.HR.anp.analysis-list', [
             'analyses' => $analyses,
         ]);
     }

@@ -78,7 +78,7 @@ class DetailCandidate extends Component
 
     public function render()
     {
-        return view('livewire.hr.detail-candidate', [
+        return view('livewire.HR.detail-candidate', [
             'pageTitle' => 'Detail Kandidat'
         ]);
     }

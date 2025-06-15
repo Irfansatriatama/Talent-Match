@@ -24,7 +24,7 @@
                             <p class="text-sm mb-0">Kelola semua sesi analisis ANP yang pernah dibuat.</p>
                         </div>
                         <div class="col-md-6 text-end">
-                            <a href="{{ route('hr.anp.analysis.create') }}" class="btn bg-gradient-primary mb-0">
+                            <a href="{{ route('HR.anp.analysis.create') }}" class="btn bg-gradient-primary mb-0">
                                 <i class="material-icons text-sm">add</i>&nbsp;&nbsp;Buat Analisis Baru
                             </a>
                         </div>
@@ -116,7 +116,7 @@
                                     </td>
                                     <td class="align-middle text-center">
                                         {{-- Tombol Lihat Hasil --}}
-                                        <a href="{{ route('hr.anp.analysis.show', ['anpAnalysis' => $analysis->id]) }}" 
+                                        <a href="{{ route('HR.anp.analysis.show', ['anpAnalysis' => $analysis->id]) }}" 
                                            class="text-secondary font-weight-bold text-xs" 
                                            data-bs-toggle="tooltip" 
                                            data-bs-placement="top" 
@@ -125,7 +125,7 @@
                                         </a>
                                         {{-- Tombol Lanjutkan Proses --}}
                                         @if($analysis->status !== 'completed' && $analysis->status !== 'calculating')
-                                            <a href="{{ route('hr.anp.analysis.network.define', ['anpAnalysis' => $analysis->id]) }}" 
+                                            <a href="{{ route('HR.anp.analysis.network.define', ['anpAnalysis' => $analysis->id]) }}" 
                                                class="text-secondary font-weight-bold text-xs mx-2" 
                                                data-bs-toggle="tooltip" 
                                                data-bs-placement="top" 

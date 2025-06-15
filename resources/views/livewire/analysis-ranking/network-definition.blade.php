@@ -9,7 +9,7 @@
 
     <div class="card shadow mb-4">
         <div class="card-body">
-            @livewire('hr.anp.network-builder', ['anpAnalysis' => $anpAnalysis])
+            @livewire('HR.anp.network-builder', ['anpAnalysis' => $anpAnalysis])
         </div>
     </div>
 </div>
