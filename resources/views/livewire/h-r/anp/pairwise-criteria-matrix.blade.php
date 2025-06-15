@@ -63,7 +63,7 @@
                                                         step="any" 
                                                         min="0.11" 
                                                         max="9"
-                                                        wire:model.live.debounce.500ms="matrixValues.{{ $rowElement->id }}.{{ $colElement->id }}"
+                                                        wire:model.live.debounce.10ms="matrixValues.{{ $rowElement->id }}.{{ $colElement->id }}"
                                                         class="form-control form-control-sm text-center @error('matrixValues.'.$rowElement->id.'.'.$colElement->id) is-invalid @enderror"
                                                         placeholder="{{ isset($matrixValues[$rowElement->id][$colElement->id]) ? '' : '?' }}">
                                                     @error('matrixValues.'.$rowElement->id.'.'.$colElement->id)
