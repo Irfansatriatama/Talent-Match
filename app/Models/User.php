@@ -16,7 +16,7 @@ class User extends Authenticatable
 
 
     public const ROLE_CANDIDATE = 'candidate';
-    public const ROLE_HR = 'hr';
+    public const ROLE_HR = 'HR';
 
 
     public const JOB_POSITION_SOFTWARE_ENGINEER = 'Software Engineer';
