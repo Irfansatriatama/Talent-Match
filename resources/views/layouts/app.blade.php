@@ -19,7 +19,7 @@
 
     @else
         @auth 
-            @if (auth()->user()->role == 'hr')
+            @if (auth()->user()->role == 'HR')
                 <x-navbars.sidebar-hr /> 
             @elseif (auth()->user()->role == 'candidate')
                 <x-navbars.sidebar /> 
