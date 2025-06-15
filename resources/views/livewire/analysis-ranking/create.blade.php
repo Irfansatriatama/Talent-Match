@@ -12,7 +12,7 @@
             <h6 class="m-0 font-weight-bold text-primary">Langkah 1: Inisiasi Analisis</h6>
         </div>
         <div class="card-body">
-            @livewire('HR.anp.create-analysis-form')
+            @livewire('h-r.anp.create-analysis-form')
         </div>
     </div>
 </div>

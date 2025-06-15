@@ -45,7 +45,7 @@ class PairwiseCriteriaMatrix extends Component
 
         if (!$analysisId || !$pairwiseContext) {
             session()->flash('error', 'Sesi perbandingan tidak valid. Harap mulai proses dari awal.');
-            return redirect()->route('HR.anp.analysis.index');
+            return redirect()->route('h-r.anp.analysis.index');
         }
 
         $this->analysis = AnpAnalysis::with('networkStructure')->findOrFail($analysisId);
@@ -300,7 +300,7 @@ class PairwiseCriteriaMatrix extends Component
                 
                 Log::info("[ANP] Redirecting to inner dependence comparison for cluster: {$cluster->name}");
                 
-                return redirect()->route('HR.anp.analysis.pairwise-criteria');
+                return redirect()->route('h-r.anp.analysis.pairwise-criteria');
             }
         }
 
@@ -309,7 +309,7 @@ class PairwiseCriteriaMatrix extends Component
         
         foreach ($allDependencies as $dependency) {
             if (!$completedInterdependencyComps->contains($dependency->id)) {
-                return redirect()->route('HR.anp.analysis.interdependency.pairwise.form', [
+                return redirect()->route('h-r.anp.analysis.interdependency.pairwise.form', [
                     'anpAnalysis' => $analysis->id,
                     'anpDependency' => $dependency->id
                 ]);
@@ -321,7 +321,7 @@ class PairwiseCriteriaMatrix extends Component
 
         foreach ($allCriteriaElements as $element) {
             if (!$completedAlternativeComps->contains($element->id)) {
-                return redirect()->route('HR.anp.analysis.alternative.pairwise.form', [
+                return redirect()->route('h-r.anp.analysis.alternative.pairwise.form', [
                     'anpAnalysis' => $analysis->id,
                     'anpElement' => $element->id
                 ]);
@@ -337,6 +337,6 @@ class PairwiseCriteriaMatrix extends Component
 
     public function render()
     {
-        return view('livewire.HR.anp.pairwise-criteria-matrix');
+        return view('livewire.h-r.anp.pairwise-criteria-matrix');
     }
 }

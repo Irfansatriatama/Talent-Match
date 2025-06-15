@@ -63,7 +63,7 @@ Route::middleware('auth')->group(function () {
         });
     });
 
-    Route::prefix('hr')->name('HR.')->middleware('role:' . User::ROLE_HR)->group(function() {
+    Route::prefix('h-r')->name('h-r.')->middleware('role:' . User::ROLE_HR)->group(function() {
         Route::get('dashboard', DashboardHr::class)->name('dashboard');
         Route::get('candidates', Candidate::class)->name('candidates');
         Route::get('settings', Setting::class)->name('settings');

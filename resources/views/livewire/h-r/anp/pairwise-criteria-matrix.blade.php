@@ -164,7 +164,7 @@
 
             <hr class="horizontal dark my-4">
             <div class="d-flex justify-content-between">
-                <a href="{{ route('HR.anp.analysis.network.define', $analysis->id) }}" class="btn btn-outline-secondary">
+                <a href="{{ route('h-r.anp.analysis.network.define', $analysis->id) }}" class="btn btn-outline-secondary">
                     <i class="material-icons text-sm">arrow_back</i> Kembali ke Definisi Jaringan
                 </a>
             </div>

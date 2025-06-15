@@ -298,7 +298,7 @@ class PairwiseAlternativesMatrix extends Component
         $nextElement = $this->findNextPendingAlternativeComparison();
         if ($nextElement) {
             Log::info('Proses dialihkan ke perbandingan alternatif berikutnya.'); 
-            return redirect()->route('HR.anp.analysis.alternative.pairwise.form', [
+            return redirect()->route('h-r.anp.analysis.alternative.pairwise.form', [
                 'anpAnalysis' => $this->analysis->id,
                 'anpElement' => $nextElement->id
             ]);
@@ -333,7 +333,7 @@ class PairwiseAlternativesMatrix extends Component
 
             \Log::info("ANP Calculation completed for Analysis ID: {$this->analysis->id}", $result);
 
-            return redirect()->route('HR.anp.analysis.show', $this->analysis->id)
+            return redirect()->route('h-r.anp.analysis.show', $this->analysis->id)
                 ->with('success', 'Kalkulasi ANP berhasil diselesaikan!');
 
         } catch (\Exception $e) {
@@ -412,6 +412,6 @@ class PairwiseAlternativesMatrix extends Component
 
     public function render()
     {
-        return view('livewire.HR.anp.pairwise-alternatives-matrix');
+        return view('livewire.h-r.anp.pairwise-alternatives-matrix');
     }
 }

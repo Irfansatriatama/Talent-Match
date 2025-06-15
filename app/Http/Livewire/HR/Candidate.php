@@ -108,7 +108,7 @@ class Candidate extends Component
         
         $candidates = $query->orderBy($this->sortBy, $this->sortOrder)->paginate(10);
 
-        return view('livewire.HR.candidate', [
+        return view('livewire.h-r.candidate', [
             'candidates' => $candidates,
             'pageTitle' => 'Manajemen Kandidat'
         ]);

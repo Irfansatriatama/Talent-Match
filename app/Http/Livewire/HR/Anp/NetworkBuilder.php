@@ -38,7 +38,7 @@ class NetworkBuilder extends Component
 
         if (!$analysisId) {
             session()->flash('error', 'Sesi analisis tidak ditemukan. Harap mulai dari awal.');
-            return redirect()->route('HR.anp.analysis.index');
+            return redirect()->route('h-r.anp.analysis.index');
         }
 
         $this->analysis = AnpAnalysis::findOrFail($analysisId);
@@ -186,13 +186,13 @@ class NetworkBuilder extends Component
         $this->analysis->status = 'criteria_comparison_pending';
         $this->analysis->save();
         
-        return redirect()->route('HR.anp.analysis.pairwise-criteria');
+        return redirect()->route('h-r.anp.analysis.pairwise-criteria');
     }
 
 
     public function render()
     {
-        return view('livewire.HR.anp.network-builder', [
+        return view('livewire.h-r.anp.network-builder', [
             'dependencies' => $this->networkStructure ? $this->networkStructure->dependencies()->with(['sourceable', 'targetable'])->get() : collect(),
         ]);
     }

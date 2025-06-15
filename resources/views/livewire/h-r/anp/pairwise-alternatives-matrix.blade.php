@@ -41,7 +41,7 @@
                                                 <p class="text-xs text-muted mb-0">{{ $candidate->email }}</p>
                                             </div>
                                         </div>
-                                        <a href="{{ route('HR.detail-candidate', ['candidate' => $candidate->id]) }}" 
+                                        <a href="{{ route('h-r.detail-candidate', ['candidate' => $candidate->id]) }}" 
                                            target="_blank" 
                                            class="btn btn-sm btn-outline-primary mb-0">
                                             <i class="material-icons text-sm">open_in_new</i> Lihat Detail
@@ -187,7 +187,7 @@
 
             <hr class="horizontal dark my-4">
             <div class="d-flex justify-content-between">
-                <a href="{{ route('HR.anp.analysis.network.define', ['anpAnalysis' => $analysis->id]) }}" class="btn btn-outline-secondary">
+                <a href="{{ route('h-r.anp.analysis.network.define', ['anpAnalysis' => $analysis->id]) }}" class="btn btn-outline-secondary">
                     <i class="material-icons text-sm">arrow_back</i> Kembali ke Definisi Jaringan
                 </a>
             </div>

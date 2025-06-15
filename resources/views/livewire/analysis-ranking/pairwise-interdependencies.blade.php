@@ -9,7 +9,7 @@
 
     <div class="card shadow mb-4">
         <div class="card-body">
-            @livewire('HR.anp.pairwise-interdependencies-matrix', [
+            @livewire('h-r.anp.pairwise-interdependencies-matrix', [
                 'anpAnalysis' => $anpAnalysis,
                 'anpDependency' => $anpDependency
             ])

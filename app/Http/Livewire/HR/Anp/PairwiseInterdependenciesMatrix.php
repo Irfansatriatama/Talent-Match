@@ -212,7 +212,7 @@ class PairwiseInterdependenciesMatrix extends Component
         $nextDependency = $this->findNextPendingInterdependencyComparison();
 
         if ($nextDependency) {
-            return redirect()->route('HR.anp.analysis.interdependency.pairwise.form', [
+            return redirect()->route('h-r.anp.analysis.interdependency.pairwise.form', [
                 'anpAnalysis' => $this->analysis->id,
                 'anpDependency' => $nextDependency->id
             ]);
@@ -221,7 +221,7 @@ class PairwiseInterdependenciesMatrix extends Component
 
             $firstElementForAlternatives = $this->analysis->networkStructure->elements()->first();
             if ($firstElementForAlternatives) {
-                return redirect()->route('HR.anp.analysis.alternative.pairwise.form', [
+                return redirect()->route('h-r.anp.analysis.alternative.pairwise.form', [
                     'anpAnalysis' => $this->analysis->id,
                     'anpElement' => $firstElementForAlternatives->id
                 ]);
@@ -233,6 +233,6 @@ class PairwiseInterdependenciesMatrix extends Component
 
     public function render()
     {
-        return view('livewire.HR.anp.pairwise-interdependencies-matrix');
+        return view('livewire.h-r.anp.pairwise-interdependencies-matrix');
     }
 }

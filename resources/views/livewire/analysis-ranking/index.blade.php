@@ -12,7 +12,7 @@
             <h6 class="m-0 font-weight-bold text-primary">Daftar Sesi Analisis</h6>
         </div>
         <div class="card-body">
-            @livewire('HR.anp.analysis-list')
+            @livewire('h-r.anp.analysis-list')
         </div>
     </div>
 </div>

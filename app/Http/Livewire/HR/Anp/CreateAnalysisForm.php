@@ -143,7 +143,7 @@ class CreateAnalysisForm extends Component
 
             session()->flash('message', 'Analisis ANP baru berhasil dibuat. Silakan lanjutkan ke definisi jaringan.');
 
-            return redirect()->route('HR.anp.analysis.network.define', $analysis->id);
+            return redirect()->route('h-r.anp.analysis.network.define', $analysis->id);
 
         } catch (\Exception $e) {
             Log::error('Failed to create ANP analysis', [
@@ -157,6 +157,6 @@ class CreateAnalysisForm extends Component
 
     public function render()
     {
-        return view('livewire.HR.anp.create-analysis-form');
+        return view('livewire.h-r.anp.create-analysis-form');
     }
 }

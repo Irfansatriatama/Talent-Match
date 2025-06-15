@@ -79,7 +79,7 @@
         </div>
         
         <div class="card-footer px-0 pt-4">
-            <a href="{{ route('HR.candidates') }}" class="btn btn-outline-primary">Kembali ke Daftar Kandidat</a>
+            <a href="{{ route('h-r.candidates') }}" class="btn btn-outline-primary">Kembali ke Daftar Kandidat</a>
         </div>
     </div>
 </div>

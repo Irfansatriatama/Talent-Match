@@ -13,8 +13,8 @@
     <div class="collapse navbar-collapse w-auto h-auto" id="sidenav-collapse-main">
         <ul class="navbar-nav">
             <li class="nav-item">
-                <a class="nav-link text-white d-flex align-items-center {{ Route::currentRouteName() == 'HR.dashboard' ? ' active bg-gradient-primary' : '' }}"
-                    href="{{ route('HR.dashboard') }}">
+                <a class="nav-link text-white d-flex align-items-center {{ Route::currentRouteName() == 'h-r.dashboard' ? ' active bg-gradient-primary' : '' }}"
+                    href="{{ route('h-r.dashboard') }}">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="material-icons opacity-10">dashboard</i>
                     </div>
@@ -27,8 +27,8 @@
             </li>
             
             <li class="nav-item">
-                <a class="nav-link text-white d-flex align-items-center {{ str_contains(Route::currentRouteName(), 'HR.anp.analysis') ? ' active bg-gradient-primary' : '' }}"
-                    href="{{ route('HR.anp.analysis.index') }}">
+                <a class="nav-link text-white d-flex align-items-center {{ str_contains(Route::currentRouteName(), 'h-r.anp.analysis') ? ' active bg-gradient-primary' : '' }}"
+                    href="{{ route('h-r.anp.analysis.index') }}">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="material-icons opacity-10">analytics</i>
                     </div>
@@ -37,8 +37,8 @@
             </li>
             
             <li class="nav-item">
-                <a class="nav-link text-white d-flex align-items-center {{ Route::currentRouteName() == 'HR.candidates' ? ' active bg-gradient-primary' : '' }}"
-                    href="{{ route('HR.candidates') }}">
+                <a class="nav-link text-white d-flex align-items-center {{ Route::currentRouteName() == 'h-r.candidates' ? ' active bg-gradient-primary' : '' }}"
+                    href="{{ route('h-r.candidates') }}">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="material-icons opacity-10">people</i> 
                     </div>
@@ -47,8 +47,8 @@
             </li>
             
             <li class="nav-item">
-                <a class="nav-link text-white d-flex align-items-center {{ Route::currentRouteName() == 'HR.settings' ? ' active bg-gradient-primary' : '' }}"
-                    href="{{ route('HR.settings') }}">
+                <a class="nav-link text-white d-flex align-items-center {{ Route::currentRouteName() == 'h-r.settings' ? ' active bg-gradient-primary' : '' }}"
+                    href="{{ route('h-r.settings') }}">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="material-icons opacity-10">settings</i> 
                     </div>
