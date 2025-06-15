@@ -33,7 +33,7 @@ class EnsureUserHasRole
         }
 
         if ($user->role === User::ROLE_HR) {
-            return redirect()->route('hr.dashboard')->with('error', 'Anda tidak memiliki akses ke halaman tersebut.');
+            return redirect()->route('HR.dashboard')->with('error', 'Anda tidak memiliki akses ke halaman tersebut.');
         } elseif ($user->role === User::ROLE_CANDIDATE) {
             return redirect()->route('dashboard')->with('error', 'Anda tidak memiliki akses ke halaman tersebut.');
         }
