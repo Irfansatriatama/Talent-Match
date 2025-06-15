@@ -85,7 +85,6 @@
 
     {{-- BARIS 2: GRAFIK INTERAKTIF --}}
     <div class="row mt-4">
-        {{-- GRAFIK DISTRIBUSI MBTI (DONUT CHART) --}}
         <div class="col-lg-6 col-md-6 mb-4">
             <div class="card z-index-2 h-100">
                 <div class="card-header pb-0 pt-3 bg-transparent">
