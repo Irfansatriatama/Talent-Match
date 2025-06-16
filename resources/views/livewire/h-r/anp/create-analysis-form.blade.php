@@ -15,8 +15,7 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <div class="input-group input-group-outline @error('name') is-invalid @enderror">
-                            <label class="form-label">Nama Analisis</label>
-                            <input type="text" id="name" wire:model.defer="name" class="form-control">
+                            <input type="text" id="name" wire:model.live="name" class="form-control" placeholder="Masukkan nama analisis" required>
                         </div>
                         @error('name') <div class="text-danger text-xs ps-1">{{ $message }}</div> @enderror
                     </div>
