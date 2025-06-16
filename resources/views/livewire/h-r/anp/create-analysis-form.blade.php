@@ -60,20 +60,39 @@
                                     </div>
                                     
                                     @foreach($availableCandidates as $candidate)
-                                        <div class="col-md-6 mb-2" wire:key="candidate-{{ $candidate->id }}">
-                                            <div class="form-check ps-0">
-                                                <label class="form-check-label d-flex align-items-center" for="candidate_{{ $candidate->id }}">
-                                                    <input class="form-check-input me-2" 
-                                                           type="checkbox" 
-                                                           wire:model.defer="selected_candidates" 
-                                                           value="{{ $candidate->id }}" 
-                                                           id="candidate_{{ $candidate->id }}">
-                                                    <div>
-                                                        <span class="fw-bold">{{ $candidate->name }}</span>
-                                                        <br>
-                                                        <small class="text-muted">{{ $candidate->email }}</small>
+                                        <div class="col-md-6 mb-3" wire:key="candidate-{{ $candidate->id }}">
+                                            <div class="d-flex align-items-center justify-content-between p-3 border rounded">
+                                                <div class="d-flex align-items-center flex-grow-1">
+                                                    <!-- Checkbox dipindahkan ke luar form-check untuk menghindari conflict -->
+                                                    <div class="me-3">
+                                                        <input class="form-check-input" 
+                                                            type="checkbox" 
+                                                            wire:model.live="selected_candidates" 
+                                                            value="{{ $candidate->id }}" 
+                                                            id="candidate_{{ $candidate->id }}"
+                                                            style="width: 1.25rem; height: 1.25rem; margin-top: 0;">
                                                     </div>
-                                                </label>
+                                                    
+                                                    <!-- Label area untuk informasi kandidat -->
+                                                    <label class="d-flex align-items-center mb-0 flex-grow-1" 
+                                                        for="candidate_{{ $candidate->id }}"
+                                                        style="cursor: pointer;">
+                                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($candidate->name) }}&size=40&background=random"
+                                                            class="avatar avatar-sm me-2"
+                                                            alt="{{ $candidate->name }}">
+                                                        <div>
+                                                            <h6 class="mb-0 text-sm fw-bold">{{ $candidate->name }}</h6>
+                                                            <p class="text-xs text-muted mb-0">{{ $candidate->email }}</p>
+                                                        </div>
+                                                    </label>
+                                                </div>
+                                                
+                                                <!-- Button Detail -->
+                                                <a href="{{ route('h-r.detail-candidate', ['candidate' => $candidate->id]) }}"
+                                                target="_blank"
+                                                class="btn btn-sm btn-outline-primary mb-0 ms-2">
+                                                    <i class="material-icons text-sm">open_in_new</i> Detail
+                                                </a>
                                             </div>
                                         </div>
                                     @endforeach
@@ -150,3 +169,21 @@
     });
 </script>
 @endpush
+
+<style>
+    /* Pastikan checkbox terlihat dengan benar */
+    .form-check-input[type="checkbox"] {
+        -webkit-appearance: checkbox !important;
+        -moz-appearance: checkbox !important;
+        appearance: checkbox !important;
+        opacity: 1 !important;
+        position: static !important;
+        margin: 0 !important;
+    }
+    
+    /* Hover effect untuk container */
+    .border:hover {
+        background-color: #f8f9fa;
+        transition: background-color 0.2s;
+    }
+</style>
