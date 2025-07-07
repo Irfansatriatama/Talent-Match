@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->foreignId('job_position_id')->constrained('job_positions')->onDelete('restrict');
-            $table->foreignId('anp_network_structure_id')->constrained('anp_network_structures')->onDelete('restrict');
+            $table->foreignId('anp_network_structure_id')->constrained('anp_network_structures')->cascadeOnDelete();
             $table->foreignId('hr_user_id')->constrained('users')->onDelete('cascade'); 
             $table->string('status')->default('pending');
             $table->text('description')->nullable();

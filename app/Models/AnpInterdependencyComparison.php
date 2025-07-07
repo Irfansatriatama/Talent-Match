@@ -23,6 +23,15 @@ class AnpInterdependencyComparison extends Model
         'priority_vector' => 'array',
     ];
 
+    protected static function booted()
+    {
+        parent::booted();
+
+        static::deleting(function ($model) {
+            $model->consistency()->delete();
+        });
+    }
+
     public function analysis(): BelongsTo
     {
         return $this->belongsTo(AnpAnalysis::class, 'anp_analysis_id');

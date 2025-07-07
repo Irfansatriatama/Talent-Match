@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('anp_elements', function (Blueprint $table) {
             $table->id();
             $table->foreignId('anp_network_structure_id')->constrained('anp_network_structures')->onDelete('cascade');
-            $table->foreignId('anp_cluster_id')->nullable()->constrained('anp_clusters')->onDelete('set null');
+            $table->foreignId('anp_cluster_id')->nullable()->constrained('anp_clusters')->cascadeOnDelete();
             $table->string('name');
             $table->text('description')->nullable();
             $table->timestamps();
