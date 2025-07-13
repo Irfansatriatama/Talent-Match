@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\CandidateFile;
 
 class User extends Authenticatable
 {
@@ -159,5 +160,20 @@ class User extends Authenticatable
         }
 
         return ($completedCount / $totalTests) * 100;
+    }
+
+    public function cv()
+    {
+        return $this->hasOne(CandidateFile::class)->where('file_type', 'cv');
+    }
+
+    public function portfolios()
+    {
+        return $this->hasMany(CandidateFile::class)->where('file_type', 'portfolio');
+    }
+
+    public function candidateFiles()
+    {
+        return $this->hasMany(CandidateFile::class);
     }
 }

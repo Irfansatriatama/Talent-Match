@@ -31,8 +31,8 @@
                         <p class="mb-0">Pastikan Anda telah:</p>
                         <ul class="mb-0">
                             <li>Memilih <strong>Posisi yang Dilamar</strong> sesuai dengan minat dan kualifikasi Anda.</li>
-                            <li>Mengisi <strong>Ringkasan Profil (Profile Summary)</strong> yang menjelaskan tentang diri Anda secara singkat dan menarik.</li>
-                            <li>Menempatkan <strong>Link Portofolio, Github, dan informasi lainnya </strong>sebagai nilai tambah penilaian anda.</li>
+                            <li>Menempatkan <strong>File CV</strong> sesuai dengan posisi yang akan anda lamar</li>
+                            <li>Menempatkan <strong>File Portofolio, Github, dan informasi lainnya </strong>sebagai nilai tambah penilaian anda.</li>
                             <li>Memastikan <strong>Email</strong> dan <strong>Nomor Telepon</strong> Anda aktif dan dapat dihubungi.</li>
                         </ul>
                     </div>
@@ -105,16 +105,87 @@
                                 <p class='text-danger inputerror mt-1 text-xs'>{{ $message }} </p>
                             @enderror
                         </div>
-
                         <div class="mb-3 col-md-12">
+                            <h6 class="mb-3">Dokumen Pendukung</h6>
+                            
+                            {{-- CV Upload --}}
+                            <div class="mb-4">
+                                <label class="form-label">CV (PDF, Max 10MB)</label>
+                                
+                                @if($existingCv)
+                                    <div class="alert alert-info d-flex justify-content-between align-items-center">
+                                        <div class="text-white fw-bold">
+                                            <i class="material-icons me-2 text-white">description</i>
+                                            {{ $existingCv->original_name }}
+                                        </div>
+                                        <div>
+                                            <a href="{{ Storage::url($existingCv->file_path) }}" 
+                                            target="_blank" 
+                                            class="btn btn-sm btn-primary me-2">
+                                                <i class="material-icons">visibility</i> Lihat
+                                            </a>
+                                            <button wire:click="deleteFile({{ $existingCv->id }})" 
+                                                    class="btn btn-sm btn-danger"
+                                                    onclick="return confirm('Hapus CV ini?')">
+                                                <i class="material-icons">delete</i> Hapus
+                                            </button>
+                                        </div>
+                                    </div>
+                                @endif
+                                
+                                <div class="input-group input-group-outline">
+                                    <input type="file" 
+                                        wire:model="cv" 
+                                        class="form-control" 
+                                        accept=".pdf">
+                                </div>
+                                @error('cv')
+                                    <p class='text-danger inputerror mt-1 text-xs'>{{ $message }}</p>
+                                @enderror
+                            </div>
 
-                            <label for="floatingTextarea2">Profile Summary</label>
-                            <textarea wire:model.blur="user.profile_summary" class="form-control border border-2 p-2"
-                                placeholder=" Say something about yourself" id="floatingTextarea2" rows="4"
-                                cols="50"></textarea>
-                            @error('user.about')
-                            <p class='text-danger inputerror'>{{ $message }} </p>
-                            @enderror
+                            {{-- Portfolio Upload --}}
+                            <div class="mb-4">
+                                <label class="form-label">Portfolio/Sertifikat (PDF, Max 10MB per file)</label>
+                                
+                                @if($existingPortfolios->count() > 0)
+                                    <div class="mb-3">
+                                        <h6 class="text-sm">File yang sudah diupload:</h6>
+                                        @foreach($existingPortfolios as $portfolio)
+                                            <div class="alert alert-info d-flex justify-content-between align-items-center mb-2">
+                                                <div class="text-white fw-bold">
+                                                    <i class="material-icons me-2 text-white">folder</i>
+                                                    {{ $portfolio->original_name }}
+                                                </div>
+                                                <div>
+                                                    <a href="{{ Storage::url($portfolio->file_path) }}" 
+                                                    target="_blank" 
+                                                    class="btn btn-sm btn-primary me-2">
+                                                        <i class="material-icons">visibility</i> Lihat
+                                                    </a>
+                                                    <button wire:click="deleteFile({{ $portfolio->id }})" 
+                                                            class="btn btn-sm btn-danger"
+                                                            onclick="return confirm('Hapus file ini?')">
+                                                        <i class="material-icons">delete</i> Hapus
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+                                
+                                <div class="input-group input-group-outline">
+                                    <input type="file" 
+                                        wire:model="portfolios" 
+                                        class="form-control" 
+                                        accept=".pdf"
+                                        multiple>
+                                </div>
+                                <small class="text-muted">Anda dapat memilih beberapa file sekaligus</small>
+                                @error('portfolios.*')
+                                    <p class='text-danger inputerror mt-1 text-xs'>{{ $message }}</p>
+                                @enderror
+                            </div>
                         </div>
                     </div>
                     <button type="submit" class="btn bg-gradient-dark">Submit</button>

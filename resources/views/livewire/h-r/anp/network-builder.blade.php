@@ -29,11 +29,10 @@
                                 <form wire:submit.prevent="addCluster">
                                     <div class="d-flex gap-2">
                                         <div class="input-group input-group-outline flex-grow-1">
-                                            <label class="form-label">Nama Cluster</label>
-                                            <input type="text" wire:model.lazy="newClusterName" class="form-control">
+                                            <input type="text" wire:model.lazy="newClusterName" class="form-control" placeholder="Nama Cluster Baru">
                                         </div>
                                         <button type="submit" class="btn btn-primary btn-hover-transform mb-0">
-                                            <i class="material-icons text-xs me-1">add_circle</i> Tambah
+                                            <i class="material-icons text-xs me-1">add_circle</i>
                                         </button>
                                     </div>
                                     @error('newClusterName') <span class="text-danger text-xs mt-1 fade-in">{{ $message }}</span> @enderror
@@ -74,8 +73,7 @@
                                 <h6 class="text-sm fw-bold text-dark">Tambah Elemen (Kriteria) Baru</h6>
                                 <form wire:submit.prevent="addElement">
                                     <div class="input-group input-group-outline mb-2">
-                                        <label class="form-label">Nama Elemen Baru</label>
-                                        <input type="text" wire:model.lazy="newElementName" class="form-control">
+                                        <input type="text" wire:model.lazy="newElementName" class="form-control" placeholder="Nama Elemen Baru">
                                     </div>
                                     @error('newElementName') <span class="text-danger text-xs mb-2 d-block fade-in">{{ $message }}</span> @enderror
 
@@ -89,7 +87,7 @@
                                             </select>
                                         </div>
                                         <button type="submit" class="btn btn-primary btn-hover-transform mb-0">
-                                            <i class="material-icons text-xs me-1">add_circle</i> Tambah
+                                            <i class="material-icons text-xs me-1">add_circle</i>
                                         </button>
                                     </div>
                                 </form>
