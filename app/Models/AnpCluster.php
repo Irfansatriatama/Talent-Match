@@ -17,6 +17,25 @@ class AnpCluster extends Model
         'description',
     ];
 
+    protected static function booted()
+    {
+        parent::booted();
+
+        static::deleting(function ($cluster) {
+            // Hapus semua elemen yang ada di dalam cluster ini
+            $cluster->elements()->delete();
+
+            // Hapus juga semua dependensi yang menjadikan cluster ini sebagai sumber atau target
+            \App\Models\AnpDependency::where(function ($query) use ($cluster) {
+                $query->where('sourceable_type', self::class)
+                      ->where('sourceable_id', $cluster->id);
+            })->orWhere(function ($query) use ($cluster) {
+                $query->where('targetable_type', self::class)
+                      ->where('targetable_id', $cluster->id);
+            })->delete();
+        });
+    }
+
     public function networkStructure(): BelongsTo
     {
         return $this->belongsTo(AnpNetworkStructure::class, 'anp_network_structure_id');

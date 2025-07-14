@@ -1,4 +1,4 @@
-<div class="col-lg-12 mb-4" x-data="{ open: true }"> 
+<div class="col-lg-12 mb-4" x-data="{ open: false }"> 
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-gradient-info text-white" 
              @click="open = !open" 

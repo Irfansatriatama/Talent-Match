@@ -65,10 +65,25 @@ class AnpAnalysisController extends Controller
      */
     public function show(AnpAnalysis $anpAnalysis)
     {
-        $anpAnalysis->load(['jobPosition', 'candidates', 'results.candidate']);
-        
-        return view('livewire.analysis-ranking.show', compact('anpAnalysis'));
-    }
+        // Tambahkan eager loading untuk semua relasi yang diperlukan
+        $anpAnalysis->load([
+            'jobPosition', 
+            'candidates', 
+            'results.candidate',
+            'networkStructure.clusters.elements',
+            'networkStructure.dependencies.sourceable', 
+            'networkStructure.dependencies.targetable',
+            'criteriaComparisons.controlCriterionable', 
+            'criteriaComparisons.consistency',
+            'interdependencyComparisons.dependency', 
+        'interdependencyComparisons.consistency',
+        'alternativeComparisons.element', 
+        'alternativeComparisons.consistency'
+    ]);
+    
+    // Tetap menggunakan view yang sudah ada
+    return view('livewire.analysis-ranking.show', compact('anpAnalysis'));
+}
 
     /**
      *

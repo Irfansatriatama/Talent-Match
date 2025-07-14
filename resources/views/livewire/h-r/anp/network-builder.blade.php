@@ -138,29 +138,38 @@
                 </div>
                 <div class="card-body p-3">
                     <div class="alert alert-light mb-4">
-                        <h6 class="text-dark mb-2"><i class="material-icons text-sm align-middle">info</i> Panduan Interdependensi</h6>
-                        <p class="text-sm mb-2">Interdependensi menunjukkan hubungan pengaruh antar kriteria atau cluster dalam jaringan ANP. <strong>Fitur ini OPSIONAL</strong> - Anda dapat melewatinya jika tidak ada hubungan saling mempengaruhi antar kriteria.</p>
-                        
-                        <div class="bg-white rounded p-3 mb-3 border">
-                            <h6 class="text-sm fw-bold text-primary mb-2">⚠️ Penting untuk Perbandingan Interdependensi:</h6>
-                            <p class="text-sm mb-2">Agar muncul perbandingan interdependensi, Anda harus membuat <strong>minimal 2 hubungan dengan sumber yang sama</strong>. Contoh:</p>
-                            <ul class="text-sm mb-0">
-                                <li>✅ <strong>Benar:</strong> Kepemimpinan → Komunikasi | Kerjasama Tim → Komunikasi<br>
-                                    <span class="text-muted ms-3">(2 hubungan terhadap "Komunikasi", akan muncul perbandingan)</span></li>
-                                <li>❌ <strong>Salah:</strong> Hanya Komunikasi → Kepemimpinan<br>
-                                    <span class="text-muted ms-3">(Hanya 1 hubungan, tidak ada perbandingan)</span></li>
+                        <h6 class="text-dark mb-2">
+                            <i class="material-icons text-sm align-middle">info</i> 
+                            <a class="text-decoration-none text-dark collapse-toggle" data-bs-toggle="collapse" href="#panduanInterdependensi" 
+                               role="button" aria-expanded="false" aria-controls="panduanInterdependensi">
+                                Panduan Interdependensi
+                                <i class="material-icons text-sm float-end">expand_more</i>
+                            </a>
+                        </h6>
+                        <div class="collapse" id="panduanInterdependensi">
+                            <p class="text-sm mb-2">Interdependensi menunjukkan hubungan pengaruh antar kriteria atau cluster dalam jaringan ANP. <strong>Fitur ini OPSIONAL</strong> - Anda dapat melewatinya jika tidak ada hubungan saling mempengaruhi antar kriteria.</p>
+                            
+                            <div class="bg-white rounded p-3 mb-3 border">
+                                <h6 class="text-sm fw-bold text-primary mb-2">⚠️ Penting untuk Perbandingan Interdependensi:</h6>
+                                <p class="text-sm mb-2">Agar muncul perbandingan interdependensi, Anda harus membuat <strong>minimal 2 hubungan dengan sumber yang sama</strong>. Contoh:</p>
+                                <ul class="text-sm mb-0">
+                                    <li>✅ <strong>Benar:</strong> Kepemimpinan → Komunikasi | Kerjasama Tim → Komunikasi<br>
+                                        <span class="text-muted ms-3">(2 hubungan terhadap "Komunikasi", akan muncul perbandingan)</span></li>
+                                    <li>❌ <strong>Salah:</strong> Hanya Komunikasi → Kepemimpinan<br>
+                                        <span class="text-muted ms-3">(Hanya 1 hubungan, tidak ada perbandingan)</span></li>
+                                </ul>
+                            </div>
+                            
+                            <p class="text-sm fw-bold mb-1">Jenis Hubungan Interdependensi:</p>
+                            <ul class="text-sm mb-2">
+                                <li><strong>Cluster → Cluster:</strong> Semua elemen dalam cluster sumber mempengaruhi semua elemen dalam cluster target</li>
+                                <li><strong>Cluster → Elemen:</strong> Semua elemen dalam cluster mempengaruhi elemen tertentu</li>
+                                <li><strong>Elemen → Cluster:</strong> Satu elemen mempengaruhi semua elemen dalam cluster</li>
+                                <li><strong>Elemen → Elemen:</strong> Satu elemen mempengaruhi elemen lainnya</li>
                             </ul>
+                            
+                            <p class="text-sm mb-0"><strong>💡 Tips:</strong> Mulai dengan hubungan sederhana antar elemen. Jika ragu, Anda dapat melewati bagian ini dan langsung ke perbandingan kriteria.</p>
                         </div>
-                        
-                        <p class="text-sm fw-bold mb-1">Jenis Hubungan Interdependensi:</p>
-                        <ul class="text-sm mb-2">
-                            <li><strong>Cluster → Cluster:</strong> Semua elemen dalam cluster sumber mempengaruhi semua elemen dalam cluster target</li>
-                            <li><strong>Cluster → Elemen:</strong> Semua elemen dalam cluster mempengaruhi elemen tertentu</li>
-                            <li><strong>Elemen → Cluster:</strong> Satu elemen mempengaruhi semua elemen dalam cluster</li>
-                            <li><strong>Elemen → Elemen:</strong> Satu elemen mempengaruhi elemen lainnya</li>
-                        </ul>
-                        
-                        <p class="text-sm mb-0"><strong>💡 Tips:</strong> Mulai dengan hubungan sederhana antar elemen. Jika ragu, Anda dapat melewati bagian ini dan langsung ke perbandingan kriteria.</p>
                     </div>
                     <div class="row">
                         <div class="col-lg-7 border-end-lg">
@@ -355,19 +364,6 @@
         height: 1.75rem;
     }
     
-    /* Special untuk delete icon */
-    .btn-delete-icon.btn-icon-only {
-        width: 1.75rem;
-        height: 1.75rem;
-    }
-        justify-content: center;
-        border-radius: 50%;
-    }
-
-    .btn-icon-only .material-icons {
-        font-size: 1rem;
-    }
-    
     /* Card improvements */
     .card {
         border: none;
@@ -463,6 +459,37 @@
     .badge.text-xxs {
         font-size: 0.65rem;
         padding: 0.25em 0.5em;
+    }
+
+    /* Collapsible guide styles */
+    .collapse-toggle {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .collapse-toggle:hover {
+        color: #42424a !important;
+    }
+
+    .collapse-toggle .material-icons {
+        transition: transform 0.3s ease;
+    }
+
+    .collapse-toggle[aria-expanded="true"] .material-icons {
+        transform: rotate(180deg);
+    }
+
+    .collapse-toggle[aria-expanded="false"] .material-icons {
+        transform: rotate(0deg);
+    }
+
+    /* Smooth collapse animation */
+    .collapse {
+        transition: all 0.3s ease;
+    }
+
+    .collapsing {
+        transition: height 0.3s ease;
     }
     
     /* Animations */

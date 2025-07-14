@@ -42,4 +42,26 @@
             <x-footers.auth />
         </main>
     @endif
+
+    @auth
+    <script>
+        // Session keep-alive ping
+        setInterval(function() {
+            fetch('{{ route("keep-alive") }}', {
+                method: 'POST',
+                headers: { 
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Session refreshed:', new Date().toLocaleTimeString());
+            })
+            .catch(error => {
+                console.error('Session refresh failed:', error);
+            });
+        }, 300000); // Ping setiap 5 menit (300000 ms)
+    </script>
+    @endauth
 </x-layouts.base>

@@ -49,6 +49,11 @@ Route::middleware('guest')->group(function () {
 Route::get('reset-password/{id}', ResetPassword::class)->middleware('signed')->name('reset-password');
 
 Route::middleware('auth')->group(function () {
+    // Keep-alive endpoint - TAMBAHKAN INI
+    Route::post('/keep-alive', function () {
+        return response()->json(['status' => 'session_kept_alive']);
+    })->name('keep-alive');
+    
     Route::middleware('role:' . User::ROLE_CANDIDATE)->group(function() {
         Route::get('dashboard', Dashboard::class)->name('dashboard');
         Route::get('profile', UserProfile::class)->name('profile');
