@@ -92,6 +92,17 @@
                                     </tbody>
                                 </table>
                             </div>
+                            <div class="mt-4">
+                                <h6 class="mb-3">
+                                    <i class="material-icons text-sm align-middle">description</i>
+                                    Deskripsi Analisis
+                                </h6>
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <p class="text-sm mb-0">{{ $anpAnalysis->description ?: 'Tidak ada deskripsi.' }}</p>
+                                    </div>
+                                </div>
+                            </div>
                         @else
                             <div class="alert alert-warning text-white">
                                 <i class="material-icons text-sm align-middle">info</i>
@@ -259,26 +270,35 @@
                                                     @endif
                                                 </div>
                                                 <div class="card-body pt-3">
-                                                    @if($comparison->comparison_matrix && is_array($comparison->comparison_matrix))
+                                                    {{-- KUNCI PERBAIKAN: Periksa keberadaan 'element_ids' sebelum melakukan loop --}}
+                                                    @if(isset($comparison->comparison_data['matrix_values']) && is_array($comparison->comparison_data['matrix_values']) && isset($comparison->comparison_data['element_ids']))
                                                         <div class="table-responsive">
-                                                            <table class="table table-bordered table-hover mb-0">
-                                                                <thead class="bg-gradient-dark">
+                                                            <table class="table table-sm table-bordered">
+                                                                <thead>
                                                                     <tr>
-                                                                        <th class="text-center text-white text-xs">Kriteria</th>
-                                                                        @foreach(array_keys(reset($comparison->comparison_matrix)) as $header)
-                                                                            <th class="text-center text-white text-xs">{{ $header }}</th>
+                                                                        <th class="text-center">Kriteria</th>
+                                                                        @foreach($comparison->comparison_data['element_ids'] as $colId)
+                                                                            @php
+                                                                                $colElement = ($comparison->compared_elements_type == \App\Models\AnpCluster::class)
+                                                                                    ? $anpAnalysis->networkStructure->clusters->find($colId) 
+                                                                                    : $anpAnalysis->networkStructure->elements->find($colId);
+                                                                            @endphp
+                                                                            <th class="text-center">{{ $colElement->name ?? 'ID:'.$colId }}</th>
                                                                         @endforeach
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
-                                                                    @foreach($comparison->comparison_matrix as $row => $values)
+                                                                    @foreach($comparison->comparison_data['element_ids'] as $rowId)
+                                                                        @php
+                                                                            $rowElement = ($comparison->compared_elements_type == \App\Models\AnpCluster::class)
+                                                                                ? $anpAnalysis->networkStructure->clusters->find($rowId) 
+                                                                                : $anpAnalysis->networkStructure->elements->find($rowId);
+                                                                        @endphp
                                                                         <tr>
-                                                                            <th class="text-xs bg-light">{{ $row }}</th>
-                                                                            @foreach($values as $value)
-                                                                                <td class="text-center text-xs">
-                                                                                    <span class="badge bg-gradient-secondary">
-                                                                                        {{ number_format($value, 3) }}
-                                                                                    </span>
+                                                                            <td class="font-weight-bold">{{ $rowElement->name ?? 'ID:'.$rowId }}</td>
+                                                                            @foreach($comparison->comparison_data['element_ids'] as $colId)
+                                                                                <td class="text-center">
+                                                                                    {{ number_format($comparison->comparison_data['matrix_values'][$rowId][$colId] ?? 0, 3) }}
                                                                                 </td>
                                                                             @endforeach
                                                                         </tr>
@@ -289,7 +309,7 @@
                                                     @else
                                                         <div class="text-center py-3">
                                                             <i class="material-icons text-secondary opacity-6" style="font-size: 3rem;">table_chart</i>
-                                                            <p class="text-muted text-sm mt-2 mb-0">Data matriks tidak tersedia</p>
+                                                            <p class="text-muted text-sm mt-2 mb-0">Data matriks perbandingan kriteria tidak lengkap.</p>
                                                         </div>
                                                     @endif
                                                 </div>
@@ -344,26 +364,28 @@
                                                         @endif
                                                     </div>
                                                     <div class="card-body pt-3">
-                                                        @if($comparison->comparison_matrix && is_array($comparison->comparison_matrix))
+                                                        {{-- KUNCI PERBAIKAN: Logika berbeda, ID diambil dari key matriks, bukan 'element_ids' --}}
+                                                        @if(isset($comparison->comparison_data['matrix_values']) && is_array($comparison->comparison_data['matrix_values']))
+                                                            @php
+                                                                $elementIds = array_keys($comparison->comparison_data['matrix_values']);
+                                                            @endphp
                                                             <div class="table-responsive">
-                                                                <table class="table table-bordered table-hover mb-0">
-                                                                    <thead class="bg-gradient-dark">
+                                                                <table class="table table-sm table-bordered">
+                                                                    <thead>
                                                                         <tr>
-                                                                            <th class="text-center text-white text-xs">Elemen</th>
-                                                                            @foreach(array_keys(reset($comparison->comparison_matrix)) as $header)
-                                                                                <th class="text-center text-white text-xs">{{ $header }}</th>
+                                                                            <th class="text-center">Elemen</th>
+                                                                            @foreach($elementIds as $colId)
+                                                                                <th class="text-center">{{ $anpAnalysis->networkStructure->elements->find($colId)->name ?? 'ID:'.$colId }}</th>
                                                                             @endforeach
                                                                         </tr>
                                                                     </thead>
                                                                     <tbody>
-                                                                        @foreach($comparison->comparison_matrix as $row => $values)
+                                                                        @foreach($elementIds as $rowId)
                                                                             <tr>
-                                                                                <th class="text-xs bg-light">{{ $row }}</th>
-                                                                                @foreach($values as $value)
-                                                                                    <td class="text-center text-xs">
-                                                                                        <span class="badge bg-gradient-secondary">
-                                                                                            {{ number_format($value, 3) }}
-                                                                                        </span>
+                                                                                <td class="font-weight-bold">{{ $anpAnalysis->networkStructure->elements->find($rowId)->name ?? 'ID:'.$rowId }}</td>
+                                                                                @foreach($elementIds as $colId)
+                                                                                    <td class="text-center">
+                                                                                        {{ number_format($comparison->comparison_data['matrix_values'][$rowId][$colId] ?? 0, 3) }}
                                                                                     </td>
                                                                                 @endforeach
                                                                             </tr>
@@ -373,8 +395,7 @@
                                                             </div>
                                                         @else
                                                             <div class="text-center py-3">
-                                                                <i class="material-icons text-secondary opacity-6" style="font-size: 3rem;">table_chart</i>
-                                                                <p class="text-muted text-sm mt-2 mb-0">Data matriks tidak tersedia</p>
+                                                                <p class="text-muted text-sm mt-2 mb-0">Data matriks interdependensi tidak lengkap.</p>
                                                             </div>
                                                         @endif
                                                     </div>
@@ -420,26 +441,28 @@
                                                     @endif
                                                 </div>
                                                 <div class="card-body pt-3">
-                                                    @if($comparison->comparison_matrix && is_array($comparison->comparison_matrix))
+                                                    {{-- KUNCI PERBAIKAN: Logika berbeda, ID diambil dari key matriks, nama dari relasi 'candidates' --}}
+                                                    @if(isset($comparison->comparison_data['matrix_values']) && is_array($comparison->comparison_data['matrix_values']))
+                                                        @php
+                                                            $candidateIds = array_keys($comparison->comparison_data['matrix_values']);
+                                                        @endphp
                                                         <div class="table-responsive">
-                                                            <table class="table table-bordered table-hover mb-0">
-                                                                <thead class="bg-gradient-dark">
+                                                            <table class="table table-sm table-bordered">
+                                                                <thead>
                                                                     <tr>
-                                                                        <th class="text-center text-white text-xs">Kandidat</th>
-                                                                        @foreach(array_keys(reset($comparison->comparison_matrix)) as $header)
-                                                                            <th class="text-center text-white text-xs">{{ $header }}</th>
+                                                                        <th class="text-center">Kandidat</th>
+                                                                        @foreach($candidateIds as $colId)
+                                                                            <th class="text-center">{{ $anpAnalysis->candidates->find($colId)->name ?? 'ID:'.$colId }}</th>
                                                                         @endforeach
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
-                                                                    @foreach($comparison->comparison_matrix as $row => $values)
+                                                                    @foreach($candidateIds as $rowId)
                                                                         <tr>
-                                                                            <th class="text-xs bg-light">{{ $row }}</th>
-                                                                            @foreach($values as $value)
-                                                                                <td class="text-center text-xs">
-                                                                                    <span class="badge bg-gradient-secondary">
-                                                                                        {{ number_format($value, 3) }}
-                                                                                    </span>
+                                                                            <td class="font-weight-bold">{{ $anpAnalysis->candidates->find($rowId)->name ?? 'ID:'.$rowId }}</td>
+                                                                            @foreach($candidateIds as $colId)
+                                                                                <td class="text-center">
+                                                                                    {{ number_format($comparison->comparison_data['matrix_values'][$rowId][$colId] ?? 0, 3) }}
                                                                                 </td>
                                                                             @endforeach
                                                                         </tr>
@@ -449,8 +472,7 @@
                                                         </div>
                                                     @else
                                                         <div class="text-center py-3">
-                                                            <i class="material-icons text-secondary opacity-6" style="font-size: 3rem;">table_chart</i>
-                                                            <p class="text-muted text-sm mt-2 mb-0">Data matriks tidak tersedia</p>
+                                                            <p class="text-muted text-sm mt-2 mb-0">Data matriks alternatif tidak lengkap.</p>
                                                         </div>
                                                     @endif
                                                 </div>

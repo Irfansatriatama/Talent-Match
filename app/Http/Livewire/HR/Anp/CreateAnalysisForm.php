@@ -63,20 +63,22 @@ class CreateAnalysisForm extends Component
             $this->selected_candidates = [];
             $this->debugInfo = '';
             
-            $allCandidatesQuery = User::where('role', User::ROLE_CANDIDATE)
-                ->where('job_position_id', $value);
+            // Menggunakan config untuk test ID dan minimum score
+            $programmingTestId = config('tests.types.programming.id', 1);
+            $minimumScore = config('tests.types.programming.minimum_passing_score', 80);
             
-            $totalCandidatesForPosition = $allCandidatesQuery->count();
-            
-            Log::info('Candidates for position', [
-                'position_id' => $value,
-                'total_candidates' => $totalCandidatesForPosition
-            ]);
+            // Query dengan filter tambahan untuk skor programming
             $completedCandidatesQuery = User::where('role', User::ROLE_CANDIDATE)
                 ->where('job_position_id', $value)
                 ->with(['testProgress' => function($query) {
                     $query->where('status', 'completed');
                 }])
+                ->whereHas('testProgress', function($query) use ($programmingTestId, $minimumScore) {
+                    // Filter untuk tes programming dengan skor minimal dari config
+                    $query->where('test_id', $programmingTestId)
+                        ->where('status', 'completed')
+                        ->where('score', '>=', $minimumScore);
+                })
                 ->get()
                 ->filter(function ($user) {
                     $completedTestsCount = $user->testProgress
@@ -89,14 +91,14 @@ class CreateAnalysisForm extends Component
                         'user_id' => $user->id,
                         'name' => $user->name,
                         'completed_tests' => $completedTestsCount,
-                        'required_tests' => $this->totalTests
+                        'required_tests' => $this->totalTests,
+                        'programming_score' => $user->testProgress->where('test_id', config('tests.types.programming.id', 1))->first()->score ?? 'N/A'
                     ]);
                     
                     return $completedTestsCount >= $this->totalTests;
                 });
             
             $this->availableCandidates = $completedCandidatesQuery;
-        
             $this->showCandidateList = true;
             
         } else {

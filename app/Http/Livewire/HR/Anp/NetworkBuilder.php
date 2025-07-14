@@ -43,17 +43,39 @@ class NetworkBuilder extends Component
 
         $this->analysis = AnpAnalysis::findOrFail($analysisId);
         
+        // Reset semua state properties ke kondisi awal
+        $this->newElementName = '';
+        $this->newElementDescription = '';
+        $this->selectedClusterForNewElement = null;
+        $this->newClusterName = '';
+        $this->newClusterDescription = '';
+        $this->sourceType = 'element';
+        $this->sourceId = null;
+        $this->targetType = 'element';
+        $this->targetId = null;
+        $this->dependencyDescription = '';
+        $this->allElements = [];
+        $this->allClusters = [];
+        
         if ($this->analysis->anp_network_structure_id) {
+            // Mode EDIT: Load existing network structure
             $this->networkStructure = AnpNetworkStructure::with(['elements', 'clusters', 'dependencies.sourceable', 'dependencies.targetable'])->find($this->analysis->anp_network_structure_id);
+            
+            // Hanya load data jika status bukan 'network_pending' (artinya sudah pernah diisi)
+            if ($this->analysis->status !== 'network_pending') {
+                $this->loadNetworkData();
+            }
         } else {
+            // Mode CREATE: Buat struktur baru dengan state kosong
             $this->networkStructure = AnpNetworkStructure::create([
                 'name' => 'Jaringan untuk ' . $this->analysis->name,
                 'description' => 'Struktur jaringan default untuk analisis ' . $this->analysis->name,
             ]);
             $this->analysis->anp_network_structure_id = $this->networkStructure->id;
             $this->analysis->save();
+            
+            // Tidak load data apapun untuk memastikan state kosong
         }
-        $this->loadNetworkData();
     }
    
 

@@ -15,6 +15,16 @@ class AnalysisList extends Component
     public $perPage = 10;
     protected $paginationTheme = 'bootstrap';
 
+    public function mount()
+    {
+        session()->forget('current_anp_analysis_id');
+        session()->forget('anp_pairwise_context');
+        
+        $this->searchTerm = '';
+        $this->statusFilter = '';
+        $this->perPage = 10;
+    }
+
     public function updatingSearchTerm()
     {
         $this->resetPage();

@@ -151,10 +151,9 @@ class Dashboard extends Component
     private function checkProfileCompleteness(User $user): void
     {
         $this->isProfileComplete = !empty($user->name) &&
-                                   !empty($user->email) &&
-                                   !empty($user->phone) &&
-                                   !empty($user->job_position_id) &&
-                                   !empty(trim($user->profile_summary ?? ''));
+                                !empty($user->email) &&
+                                !empty($user->phone) &&
+                                !empty($user->job_position_id);
         
         $this->showProfileCompletionNotice = !$this->isProfileComplete;
     }
