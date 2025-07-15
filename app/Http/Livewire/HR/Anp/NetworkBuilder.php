@@ -43,7 +43,31 @@ class NetworkBuilder extends Component
 
         $this->analysis = AnpAnalysis::findOrFail($analysisId);
         
-        // Reset semua state properties ke kondisi awal
+        // Reset semua state properties
+        $this->resetFormFields();
+        
+        if ($this->analysis->anp_network_structure_id) {
+            // Mode EDIT: Load existing network structure
+            $this->networkStructure = AnpNetworkStructure::find($this->analysis->anp_network_structure_id);
+            
+            // Hanya load data yang terkait dengan network structure ini
+            if ($this->networkStructure) {
+                $this->loadNetworkData();
+            }
+        } else {
+            // Mode CREATE: Buat struktur baru
+            $this->networkStructure = AnpNetworkStructure::create([
+                'name' => 'Jaringan untuk ' . $this->analysis->name,
+                'description' => 'Struktur jaringan default untuk analisis ' . $this->analysis->name,
+            ]);
+            
+            $this->analysis->anp_network_structure_id = $this->networkStructure->id;
+            $this->analysis->save();
+        }
+    }
+
+    private function resetFormFields()
+    {
         $this->newElementName = '';
         $this->newElementDescription = '';
         $this->selectedClusterForNewElement = null;
@@ -54,37 +78,22 @@ class NetworkBuilder extends Component
         $this->targetType = 'element';
         $this->targetId = null;
         $this->dependencyDescription = '';
-        $this->allElements = [];
-        $this->allClusters = [];
-        
-        if ($this->analysis->anp_network_structure_id) {
-            // Mode EDIT: Load existing network structure
-            $this->networkStructure = AnpNetworkStructure::with(['elements', 'clusters', 'dependencies.sourceable', 'dependencies.targetable'])->find($this->analysis->anp_network_structure_id);
-            
-            // Hanya load data jika status bukan 'network_pending' (artinya sudah pernah diisi)
-            if ($this->analysis->status !== 'network_pending') {
-                $this->loadNetworkData();
-            }
-        } else {
-            // Mode CREATE: Buat struktur baru dengan state kosong
-            $this->networkStructure = AnpNetworkStructure::create([
-                'name' => 'Jaringan untuk ' . $this->analysis->name,
-                'description' => 'Struktur jaringan default untuk analisis ' . $this->analysis->name,
-            ]);
-            $this->analysis->anp_network_structure_id = $this->networkStructure->id;
-            $this->analysis->save();
-            
-            // Tidak load data apapun untuk memastikan state kosong
-        }
     }
-   
 
     public function loadNetworkData()
     {
         if ($this->networkStructure) {
-            $this->networkStructure->refresh(); 
-            $this->allElements = $this->networkStructure->elements()->orderBy('name')->get();
-            $this->allClusters = $this->networkStructure->clusters()->orderBy('name')->get();
+            // PENTING: Hanya load data yang terkait dengan network structure ini
+            $this->allElements = $this->networkStructure->elements()
+                ->orderBy('name')
+                ->get();
+                
+            $this->allClusters = $this->networkStructure->clusters()
+                ->orderBy('name')
+                ->get();
+        } else {
+            $this->allElements = collect();
+            $this->allClusters = collect();
         }
     }
 
@@ -95,73 +104,88 @@ class NetworkBuilder extends Component
             'selectedClusterForNewElement' => 'nullable|exists:anp_clusters,id',
         ]);
 
+        // PENTING: Pastikan element dibuat dengan network structure yang benar
         $this->networkStructure->elements()->create([
             'name' => $this->newElementName,
             'description' => $this->newElementDescription,
             'anp_cluster_id' => $this->selectedClusterForNewElement ?: null,
         ]);
+        
         $this->newElementName = '';
         $this->newElementDescription = '';
         $this->selectedClusterForNewElement = null;
+        
         $this->loadNetworkData();
         $this->dispatch('notify', ['message' => 'Elemen berhasil ditambahkan.', 'type' => 'success']);
     }
 
     public function deleteElement($elementId)
     {
+        // Hapus dependencies terkait
         AnpDependency::where(function ($q) use ($elementId) {
             $q->where('sourceable_type', AnpElement::class)->where('sourceable_id', $elementId);
         })->orWhere(function ($q) use ($elementId) {
             $q->where('targetable_type', AnpElement::class)->where('targetable_id', $elementId);
         })->delete();
+        
+        // Soft delete element
         AnpElement::find($elementId)->delete();
+        
         $this->loadNetworkData();
         $this->dispatch('notify', ['message' => 'Elemen berhasil dihapus.', 'type' => 'success']);
     }
-
 
     public function addCluster()
     {
         $this->validate([
             'newClusterName' => 'required|string|max:255',
         ]);
+        
+        // PENTING: Pastikan cluster dibuat dengan network structure yang benar
         $this->networkStructure->clusters()->create([
             'name' => $this->newClusterName,
             'description' => $this->newClusterDescription,
         ]);
+        
         $this->newClusterName = '';
         $this->newClusterDescription = '';
+        
         $this->loadNetworkData();
         $this->dispatch('notify', ['message' => 'Cluster berhasil ditambahkan.', 'type' => 'success']);
     }
 
     public function deleteCluster($clusterId)
     {
-        AnpElement::where('anp_cluster_id', $clusterId)->update(['anp_cluster_id' => null]);
-        AnpDependency::where(function ($q) use ($clusterId) {
-            $q->where('sourceable_type', AnpCluster::class)->where('sourceable_id', $clusterId);
-        })->orWhere(function ($q) use ($clusterId) {
-            $q->where('targetable_type', AnpCluster::class)->where('targetable_id', $clusterId);
-        })->delete();
-        AnpCluster::find($clusterId)->delete();
-        $this->loadNetworkData();
-        $this->dispatch('notify', ['message' => 'Cluster berhasil dihapus.', 'type' => 'success']);
+        // Dengan cascade delete, elements akan otomatis terhapus
+        $cluster = AnpCluster::find($clusterId);
+        if ($cluster) {
+            // Hapus dependencies terkait cluster
+            AnpDependency::where(function ($q) use ($clusterId) {
+                $q->where('sourceable_type', AnpCluster::class)->where('sourceable_id', $clusterId);
+            })->orWhere(function ($q) use ($clusterId) {
+                $q->where('targetable_type', AnpCluster::class)->where('targetable_id', $clusterId);
+            })->delete();
+            
+            $cluster->delete();
+            $this->loadNetworkData();
+            $this->dispatch('notify', ['message' => 'Cluster berhasil dihapus.', 'type' => 'success']);
+        }
     }
 
     public function addDependency()
     {
         $this->validate([
-            'sourceType' => 'required|in:element,cluster',
-            'sourceId' => 'required|integer',
-            'targetType' => 'required|in:element,cluster',
-            'targetId' => 'required|integer',
+            'sourceId' => 'required',
+            'targetId' => 'required',
         ]);
 
-        if ($this->sourceType === $this->targetType && $this->sourceId === $this->targetId) {
-            $this->dispatch('notify', ['message' => 'Node sumber dan target tidak boleh sama persis.', 'type' => 'error']);
+        if ($this->sourceId == $this->targetId && $this->sourceType == $this->targetType) {
+            $this->dispatch('notify', ['message' => 'Sumber dan target tidak boleh sama.', 'type' => 'error']);
             return;
         }
-        $exists = AnpDependency::where('anp_network_structure_id', $this->networkStructure->id)
+
+        // Check if dependency already exists
+        $exists = $this->networkStructure->dependencies()
             ->where('sourceable_type', $this->sourceType == 'element' ? AnpElement::class : AnpCluster::class)
             ->where('sourceable_id', $this->sourceId)
             ->where('targetable_type', $this->targetType == 'element' ? AnpElement::class : AnpCluster::class)
@@ -180,8 +204,11 @@ class NetworkBuilder extends Component
             'targetable_id' => $this->targetId,
             'description' => $this->dependencyDescription,
         ]);
+        
         $this->reset(['sourceType', 'sourceId', 'targetType', 'targetId', 'dependencyDescription']);
-        $this->sourceType = 'element'; $this->targetType = 'element'; 
+        $this->sourceType = 'element'; 
+        $this->targetType = 'element'; 
+        
         $this->loadNetworkData();
         $this->dispatch('notify', ['message' => 'Dependensi berhasil ditambahkan.', 'type' => 'success']);
     }
@@ -200,22 +227,20 @@ class NetworkBuilder extends Component
             return;
         }
         
-        session()->put('anp_pairwise_context', [
-            'control_criterion_context_type' => 'goal',
-            'control_criterion_context_id' => null,
-        ]);
-
         $this->analysis->status = 'criteria_comparison_pending';
         $this->analysis->save();
         
-        return redirect()->route('h-r.anp.analysis.pairwise-criteria');
+        return redirect()->route('h-r.anp.analysis.pairwise-criteria', $this->analysis->id);
     }
-
 
     public function render()
     {
         return view('livewire.h-r.anp.network-builder', [
-            'dependencies' => $this->networkStructure ? $this->networkStructure->dependencies()->with(['sourceable', 'targetable'])->get() : collect(),
+            'dependencies' => $this->networkStructure ? 
+                $this->networkStructure->dependencies()
+                    ->with(['sourceable', 'targetable'])
+                    ->get() : 
+                collect(),
         ]);
     }
 }

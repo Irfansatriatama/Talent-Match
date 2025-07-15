@@ -12,191 +12,329 @@ use Livewire\Component;
 
 class PairwiseInterdependenciesMatrix extends Component
 {
-    public AnpAnalysis $analysis;
-    public AnpDependency $dependency;
-
+    public $analysisId;
+    public $analysis;
+    public $dependencies;
+    public $comparisons = [];
+    public $currentDependencyIndex = 0;
+    public $priorityVectors = [];
+    public $consistencyRatios = [];
+    public $consistencyStatus = [];
+    
+    // Current dependency data
+    public $currentDependency;
     public $sourceElementsToCompare = [];
     public $targetNodeDescription;
-
-    public $matrixValues = [];
-    public $priorityVector = [];
-    public $consistencyRatio = null;
-    public $isConsistent = null;
-    public $calculationResult = null;
-
+    
     protected $rules = [
-        'matrixValues' => 'required|array',
-        'matrixValues.*.*' => 'required|numeric|min:0.11|max:9',
+        'comparisons.*.*.*.value' => 'required|numeric|min:0.1|max:9'
     ];
+    
     protected $messages = [
-        'matrixValues.*.*.required' => 'Semua nilai perbandingan harus diisi.',
-        'matrixValues.*.*.numeric' => 'Nilai perbandingan harus angka.',
-        'matrixValues.*.*.min' => 'Nilai perbandingan minimal 1/9 (sekitar 0.11).',
-        'matrixValues.*.*.max' => 'Nilai perbandingan maksimal 9.',
+        'comparisons.*.*.*.value.required' => 'Semua nilai perbandingan harus diisi.',
+        'comparisons.*.*.*.value.numeric' => 'Nilai perbandingan harus angka.',
+        'comparisons.*.*.*.value.min' => 'Nilai perbandingan minimal 0.1 (1/10).',
+        'comparisons.*.*.*.value.max' => 'Nilai perbandingan maksimal 9.',
     ];
 
-    public function mount(AnpAnalysis $anpAnalysis, AnpDependency $anpDependency)
+    public function mount($analysisId)
     {
-        $this->analysis = $anpAnalysis;
-        $this->dependency = $anpDependency->load(['sourceable', 'targetable']);
-
-        $this->targetNodeDescription = $this->dependency->targetable->name . ' (' . ($this->dependency->targetable_type == AnpElement::class ? 'Elemen' : 'Cluster') . ')';
+        $this->analysisId = $analysisId;
+        $this->analysis = AnpAnalysis::with(['networkStructure.dependencies'])->findOrFail($analysisId);
         
-        if ($this->dependency->sourceable_type == AnpCluster::class) {
-            $sourceCluster = AnpCluster::with('elements')->find($this->dependency->sourceable_id);
-            if ($sourceCluster) {
-                $this->sourceElementsToCompare = $sourceCluster->elements->all();
+        // Gunakan session key yang unik
+        $sessionKey = 'pairwise_interdependencies_comparisons_' . $this->analysisId;
+        
+        $this->dependencies = $this->analysis->networkStructure->dependencies()
+            ->with(['sourceable', 'targetable'])
+            ->get()
+            ->groupBy(function($dependency) {
+                return $dependency->targetable_type . '_' . $dependency->targetable_id;
+            });
+        
+        // Load dari session dengan key yang unik
+        $savedComparisons = session($sessionKey, []);
+        
+        if (!empty($savedComparisons)) {
+            $this->comparisons = $savedComparisons;
+            $this->loadCalculationResults();
+        } else {
+            $this->initializeComparisons();
+        }
+        
+        $this->loadExistingComparisons();
+        $this->setCurrentDependency();
+    }
+
+    public function initializeComparisons()
+    {
+        $this->comparisons = [];
+        $this->priorityVectors = [];
+        $this->consistencyRatios = [];
+        $this->consistencyStatus = [];
+
+        foreach ($this->dependencies as $groupKey => $dependencyGroup) {
+            $this->comparisons[$groupKey] = [];
+            $this->priorityVectors[$groupKey] = [];
+            $this->consistencyRatios[$groupKey] = null;
+            $this->consistencyStatus[$groupKey] = null;
+
+            // Get source elements to compare
+            $sourceElements = $this->getSourceElementsForDependencyGroup($dependencyGroup);
+            
+            // Initialize comparison matrix
+            foreach ($sourceElements as $rowElement) {
+                foreach ($sourceElements as $colElement) {
+                    if ($rowElement->id == $colElement->id) {
+                        $this->comparisons[$groupKey][$rowElement->id][$colElement->id] = ['value' => 1];
+                    } else {
+                        $this->comparisons[$groupKey][$rowElement->id][$colElement->id] = ['value' => null];
+                    }
+                }
             }
-        } else if ($this->dependency->sourceable_type == AnpElement::class) {
+        }
+    }
+
+    public function getSourceElementsForDependencyGroup($dependencyGroup)
+    {
+        $firstDependency = $dependencyGroup->first();
+        
+        if ($firstDependency->sourceable_type == AnpCluster::class) {
+            $sourceCluster = AnpCluster::with('elements')->find($firstDependency->sourceable_id);
+            return $sourceCluster ? $sourceCluster->elements : collect();
+        } else if ($firstDependency->sourceable_type == AnpElement::class) {
             $siblingDependencies = AnpDependency::where('anp_network_structure_id', $this->analysis->anp_network_structure_id)
-                ->where('targetable_id', $this->dependency->targetable_id)
-                ->where('targetable_type', $this->dependency->targetable_type)
-                ->where('sourceable_type', $this->dependency->sourceable_type)
+                ->where('targetable_id', $firstDependency->targetable_id)
+                ->where('targetable_type', $firstDependency->targetable_type)
+                ->where('sourceable_type', $firstDependency->sourceable_type)
                 ->with('sourceable')
                 ->get();
 
-            if ($siblingDependencies->isNotEmpty()) {
-                $this->sourceElementsToCompare = $siblingDependencies->pluck('sourceable')->unique('id')->all();
-            }
+            return $siblingDependencies->pluck('sourceable')->unique('id');
         }
-
-        $this->initializeMatrix();
-        $this->loadExistingComparison();
-    }
-
-    public function initializeMatrix()
-    {
-        $this->matrixValues = [];
-        foreach ($this->sourceElementsToCompare as $rowElement) {
-            foreach ($this->sourceElementsToCompare as $colElement) {
-                $this->matrixValues[$rowElement->id][$colElement->id] = ($rowElement->id == $colElement->id) ? 1 : null;
-            }
-        }
-    }
-    
-    public function loadExistingComparison()
-    {
-        $comparison = AnpInterdependencyComparison::where('anp_analysis_id', $this->analysis->id)
-            ->where('anp_dependency_id', $this->dependency->id)
-            ->first();
-
-        if ($comparison) {
-            $this->matrixValues = $comparison->comparison_data['matrix_values'] ?? $this->matrixValues;
-            $this->priorityVector = $comparison->priority_vector ?? [];
-            if ($comparison->consistency) {
-                $this->consistencyRatio = $comparison->consistency->consistency_ratio;
-                $this->isConsistent = $comparison->consistency->is_consistent;
-            }
-        }
-    }
-    public function updatedMatrixValues($value, $key)
-    {
-        [$rowId, $colId] = explode('.', $key);
         
-        if ($rowId == $colId) {
-            $this->matrixValues[$rowId][$colId] = 1;
+        return collect();
+    }
+
+    public function setCurrentDependency()
+    {
+        $dependencyGroups = $this->dependencies->keys()->toArray();
+        
+        if (isset($dependencyGroups[$this->currentDependencyIndex])) {
+            $currentGroupKey = $dependencyGroups[$this->currentDependencyIndex];
+            $this->currentDependency = $this->dependencies[$currentGroupKey]->first();
+            $this->sourceElementsToCompare = $this->getSourceElementsForDependencyGroup($this->dependencies[$currentGroupKey]);
+            $this->targetNodeDescription = $this->currentDependency->targetable->name . ' (' . 
+                ($this->currentDependency->targetable_type == AnpElement::class ? 'Elemen' : 'Cluster') . ')';
+        }
+    }
+
+    public function loadExistingComparisons()
+    {
+        foreach ($this->dependencies as $groupKey => $dependencyGroup) {
+            $firstDependency = $dependencyGroup->first();
+            
+            $comparison = AnpInterdependencyComparison::where('anp_analysis_id', $this->analysis->id)
+                ->where('anp_dependency_id', $firstDependency->id)
+                ->first();
+
+            if ($comparison) {
+                if (isset($comparison->comparison_data['matrix_values'])) {
+                    $matrixValues = $comparison->comparison_data['matrix_values'];
+                    foreach ($matrixValues as $rowId => $row) {
+                        foreach ($row as $colId => $value) {
+                            $this->comparisons[$groupKey][$rowId][$colId] = ['value' => $value];
+                        }
+                    }
+                }
+                
+                $this->priorityVectors[$groupKey] = $comparison->priority_vector ?? [];
+                
+                if ($comparison->consistency) {
+                    $this->consistencyRatios[$groupKey] = $comparison->consistency->consistency_ratio;
+                    $this->consistencyStatus[$groupKey] = $comparison->consistency->is_consistent;
+                }
+            }
+        }
+    }
+
+    public function loadCalculationResults()
+    {
+        // Load calculation results from saved comparisons
+        foreach ($this->comparisons as $groupKey => $comparisonData) {
+            if ($this->hasCompleteMatrix($groupKey)) {
+                $this->calculateConsistencyForGroup($groupKey);
+            }
+        }
+    }
+
+    public function hasCompleteMatrix($groupKey)
+    {
+        if (!isset($this->comparisons[$groupKey])) {
+            return false;
+        }
+
+        foreach ($this->comparisons[$groupKey] as $rowId => $row) {
+            foreach ($row as $colId => $cell) {
+                if ($rowId != $colId && (is_null($cell['value']) || $cell['value'] === '')) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    public function updated($propertyName)
+    {
+        if (str_starts_with($propertyName, 'comparisons.')) {
+            // Parse the property name to get group key and matrix positions
+            $parts = explode('.', $propertyName);
+            if (count($parts) >= 4) {
+                $groupKey = $parts[1];
+                $rowId = $parts[2];
+                $colId = $parts[3];
+                
+                if ($rowId != $colId) {
+                    $value = $this->comparisons[$groupKey][$rowId][$colId]['value'];
+                    
+                    if ($value !== null && $value !== '' && is_numeric($value)) {
+                        $floatValue = (float) $value;
+                        
+                        // Validate range
+                        if ($floatValue >= 0.1 && $floatValue <= 9) {
+                            // Update reciprocal value
+                            $reciprocalValue = round(1 / $floatValue, 4);
+                            $this->comparisons[$groupKey][$colId][$rowId]['value'] = $reciprocalValue;
+                            
+                            // Reset consistency calculations for this group
+                            $this->consistencyRatios[$groupKey] = null;
+                            $this->consistencyStatus[$groupKey] = null;
+                            $this->priorityVectors[$groupKey] = [];
+                        }
+                    }
+                }
+            }
+            
+            // Save to session dengan key yang unik
+            $sessionKey = 'pairwise_interdependencies_comparisons_' . $this->analysisId;
+            session([$sessionKey => $this->comparisons]);
+        }
+    }
+
+    public function calculateConsistencyForGroup($groupKey)
+    {
+        if (!$this->hasCompleteMatrix($groupKey)) {
+            $this->dispatch('notify', ['message' => 'Harap lengkapi semua nilai perbandingan terlebih dahulu.', 'type' => 'error']);
             return;
         }
+
+        $service = new AnpCalculationService();
+        $matrixForCalc = [];
         
-        $floatValue = (float) $value;
-        
-        if ($floatValue < 0.11 || $floatValue > 9) {
-            if (!isset($this->matrixValues[$rowId][$colId])) {
-                $this->matrixValues[$rowId][$colId] = 1;
+        foreach ($this->comparisons[$groupKey] as $rowId => $row) {
+            foreach ($row as $colId => $cell) {
+                $matrixForCalc[$rowId][$colId] = (float) $cell['value'];
             }
-            $this->addError("matrixValues.{$rowId}.{$colId}", 'Nilai harus antara 0.11 (1/9) dan 9');
-            return;
         }
-        
-        $this->resetErrorBag("matrixValues.{$rowId}.{$colId}");
-        $this->resetErrorBag("matrixValues.{$colId}.{$rowId}");
-        
-        $this->matrixValues[$rowId][$colId] = $floatValue;
-        
-        if ($floatValue > 0) {
-            $reciprocalValue = round(1 / $floatValue, 4);
-            $this->matrixValues[$colId][$rowId] = $reciprocalValue;
+
+        $calculationResult = $service->calculateEigenvectorAndCR($matrixForCalc);
+
+        if (isset($calculationResult['error'])) {
+            $this->dispatch('notify', ['message' => 'Error: ' . $calculationResult['error'], 'type' => 'error']);
+        } else {
+            $this->priorityVectors[$groupKey] = $calculationResult['priority_vector'];
+            $this->consistencyRatios[$groupKey] = $calculationResult['consistency_ratio'];
+            $this->consistencyStatus[$groupKey] = $calculationResult['is_consistent'];
+            
+            $message = 'Kalkulasi selesai. CR: ' . round($this->consistencyRatios[$groupKey], 4) . 
+                ($this->consistencyStatus[$groupKey] ? ' (Konsisten)' : ' (Tidak Konsisten!)');
+            $this->dispatch('notify', ['message' => $message, 'type' => $this->consistencyStatus[$groupKey] ? 'success' : 'error']);
         }
-        
-        $this->consistencyRatio = null;
-        $this->isConsistent = null;
-        $this->priorityVector = [];
-        $this->calculationResult = null;
-        
     }
 
     public function recalculateConsistency()
     {
-        try {
-            $this->validate([
-                'matrixValues.*.*' => 'required|numeric|min:0.11|max:9'
-            ], [
-                'matrixValues.*.*.required' => 'Nilai ini wajib diisi.',
-                'matrixValues.*.*.numeric' => 'Nilai harus berupa angka.',
-                'matrixValues.*.*.min' => 'Nilai minimal adalah 1/9.',
-                'matrixValues.*.*.max' => 'Nilai maksimal adalah 9.',
-            ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            $this->isConsistent = false;
-            $this->dispatch('notify', ['message' => 'Validasi gagal. Harap isi semua nilai perbandingan dengan benar.', 'type' => 'error']);
-            throw $e;
-        }
-
-        $service = new \App\Services\AnpCalculationService();
-        $matrixForCalc = [];
+        $dependencyGroups = $this->dependencies->keys()->toArray();
+        $currentGroupKey = $dependencyGroups[$this->currentDependencyIndex];
         
-        foreach ($this->sourceElementsToCompare as $rowAlt) {
-            foreach ($this->sourceElementsToCompare as $colAlt) {
-                if (isset($this->matrixValues[$rowAlt->id][$colAlt->id])) {
-                    $matrixForCalc[$rowAlt->id][$colAlt->id] = (float) $this->matrixValues[$rowAlt->id][$colAlt->id];
-                }
-            }
+        $this->calculateConsistencyForGroup($currentGroupKey);
+    }
+
+    public function nextDependency()
+    {
+        $dependencyGroups = $this->dependencies->keys()->toArray();
+        $currentGroupKey = $dependencyGroups[$this->currentDependencyIndex];
+        
+        if (!$this->consistencyStatus[$currentGroupKey]) {
+            $this->dispatch('notify', ['message' => 'Harap pastikan matriks konsisten sebelum melanjutkan.', 'type' => 'error']);
+            return;
         }
 
-        $this->calculationResult = $service->calculateEigenvectorAndCR($matrixForCalc);
+        if ($this->currentDependencyIndex < count($dependencyGroups) - 1) {
+            $this->currentDependencyIndex++;
+            $this->setCurrentDependency();
+        }
+    }
 
-        if (isset($this->calculationResult['error'])) {
-            $this->dispatch('notify', ['message' => 'Error: ' . $this->calculationResult['error'], 'type' => 'error']);
-        } else {
-            $this->priorityVector = $this->calculationResult['priority_vector'];
-            $this->consistencyRatio = $this->calculationResult['consistency_ratio'];
-            $this->isConsistent = $this->calculationResult['is_consistent'];
-            $message = 'Kalkulasi selesai. CR: ' . round($this->consistencyRatio, 4) . ($this->isConsistent ? ' (Konsisten)' : ' (Tidak Konsisten!)');
-            $this->dispatch('notify', ['message' => $message, 'type' => $this->isConsistent ? 'success' : 'error']);
+    public function previousDependency()
+    {
+        if ($this->currentDependencyIndex > 0) {
+            $this->currentDependencyIndex--;
+            $this->setCurrentDependency();
         }
     }
 
     public function saveComparisons()
     {
-        $this->recalculateConsistency();
+        $allConsistent = true;
+        
+        foreach ($this->dependencies as $groupKey => $dependencyGroup) {
+            if (!$this->consistencyStatus[$groupKey]) {
+                $allConsistent = false;
+                break;
+            }
+        }
 
-        if (is_null($this->isConsistent) || !$this->isConsistent) {
-            $this->dispatch('notify', ['message' => 'Gagal menyimpan. Matriks tidak konsisten atau belum dihitung.', 'type' => 'error']);
+        if (!$allConsistent) {
+            $this->dispatch('notify', ['message' => 'Semua matriks harus konsisten sebelum menyimpan.', 'type' => 'error']);
             return;
         }
-        
-        $comparison = AnpInterdependencyComparison::updateOrCreate(
-            ['anp_analysis_id' => $this->analysis->id, 'anp_dependency_id' => $this->dependency->id],
-            [
-                'comparison_data' => ['matrix_values' => $this->matrixValues],
-                'priority_vector' => $this->priorityVector,
-            ]
-        );
-        
-        $comparison->consistency()->updateOrCreate([], [
-            'consistency_ratio' => $this->consistencyRatio,
-            'is_consistent' => $this->isConsistent,
-        ]);
 
-        $this->dispatch('notify', ['message' => 'Perbandingan interdependensi berhasil disimpan.', 'type' => 'success']);
+        foreach ($this->dependencies as $groupKey => $dependencyGroup) {
+            $firstDependency = $dependencyGroup->first();
+            
+            // Convert comparisons to matrix values format
+            $matrixValues = [];
+            foreach ($this->comparisons[$groupKey] as $rowId => $row) {
+                foreach ($row as $colId => $cell) {
+                    $matrixValues[$rowId][$colId] = $cell['value'];
+                }
+            }
+            
+            $comparison = AnpInterdependencyComparison::updateOrCreate(
+                [
+                    'anp_analysis_id' => $this->analysis->id, 
+                    'anp_dependency_id' => $firstDependency->id
+                ],
+                [
+                    'comparison_data' => ['matrix_values' => $matrixValues],
+                    'priority_vector' => $this->priorityVectors[$groupKey],
+                ]
+            );
+            
+            $comparison->consistency()->updateOrCreate([], [
+                'consistency_ratio' => $this->consistencyRatios[$groupKey],
+                'is_consistent' => $this->consistencyStatus[$groupKey],
+            ]);
+        }
+
+        $this->dispatch('notify', ['message' => 'Semua perbandingan interdependensi berhasil disimpan.', 'type' => 'success']);
     }
 
-    private function findNextPendingInterdependencyComparison()
+    public function findNextPendingInterdependencyComparison()
     {
         $allDependencyIds = $this->analysis->networkStructure->dependencies()->pluck('id');
-
         $completedDependencyIds = $this->analysis->interdependencyComparisons()->pluck('anp_dependency_id');
-
         $nextDependencyId = $allDependencyIds->diff($completedDependencyIds)->first();
 
         return $nextDependencyId ? AnpDependency::find($nextDependencyId) : null;
@@ -205,9 +343,23 @@ class PairwiseInterdependenciesMatrix extends Component
     public function saveAndContinue()
     {
         $this->saveComparisons();
-        if (!$this->isConsistent) {
+        
+        // Check if all matrices are consistent
+        $allConsistent = true;
+        foreach ($this->consistencyStatus as $status) {
+            if (!$status) {
+                $allConsistent = false;
+                break;
+            }
+        }
+
+        if (!$allConsistent) {
             return;
         }
+
+        // Hapus session setelah berhasil disimpan
+        $sessionKey = 'pairwise_interdependencies_comparisons_' . $this->analysisId;
+        session()->forget($sessionKey);
 
         $nextDependency = $this->findNextPendingInterdependencyComparison();
 
@@ -229,6 +381,25 @@ class PairwiseInterdependenciesMatrix extends Component
         }
         
         $this->dispatch('notify', ['message' => 'Semua perbandingan interdependensi selesai, namun tidak ada kriteria untuk perbandingan alternatif.', 'type' => 'warning']);
+    }
+
+    public function getCurrentProgress()
+    {
+        $total = count($this->dependencies);
+        $completed = 0;
+        
+        foreach ($this->consistencyStatus as $status) {
+            if ($status) {
+                $completed++;
+            }
+        }
+        
+        return [
+            'current' => $this->currentDependencyIndex + 1,
+            'total' => $total,
+            'completed' => $completed,
+            'percentage' => $total > 0 ? round(($completed / $total) * 100, 2) : 0
+        ];
     }
 
     public function render()

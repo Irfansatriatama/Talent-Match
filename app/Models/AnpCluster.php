@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AnpCluster extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'anp_network_structure_id',
@@ -22,10 +23,10 @@ class AnpCluster extends Model
         parent::booted();
 
         static::deleting(function ($cluster) {
-            // Hapus semua elemen yang ada di dalam cluster ini
+            // Soft delete semua elemen yang ada di dalam cluster ini
             $cluster->elements()->delete();
 
-            // Hapus juga semua dependensi yang menjadikan cluster ini sebagai sumber atau target
+            // Soft delete juga semua dependensi yang menjadikan cluster ini sebagai sumber atau target
             \App\Models\AnpDependency::where(function ($query) use ($cluster) {
                 $query->where('sourceable_type', self::class)
                       ->where('sourceable_id', $cluster->id);

@@ -4,12 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class AnpDependency extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'anp_network_structure_id',
@@ -19,6 +20,8 @@ class AnpDependency extends Model
         'targetable_type',
         'description',
     ];
+
+    protected $dates = ['deleted_at'];
 
     public function networkStructure(): BelongsTo
     {
