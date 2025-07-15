@@ -5,278 +5,179 @@ namespace App\Http\Livewire\HR\Anp;
 use App\Models\AnpAnalysis;
 use App\Models\AnpElement;
 use App\Models\AnpAlternativeComparison;
-use App\Models\User;
+use App\Models\User; 
 use App\Services\AnpCalculationService;
-use App\Services\TestScoringService;
+use App\Services\TestScoringService; 
 use Livewire\Component;
 use Illuminate\Support\Facades\Log;
 
 class PairwiseAlternativesMatrix extends Component
 {
-    public $analysisId;
-    public $analysis;
-    public $alternatives;
-    public $comparisons = [];
-    public $criteria;
-    public $currentCriterionIndex = 0;
+    public AnpAnalysis $analysis;
+    public AnpElement $criterionElement;
+
+    public $alternativesToCompare = []; 
     
-    public $priorityVectors = [];
-    public $consistencyRatios = [];
-    public $isConsistent = [];
-    public $calculationResults = [];
-    
+    public $matrixValues = [];
+    public $priorityVector = [];
+    public $consistencyRatio = null;
+    public $isConsistent = null;
+    public $calculationResult = null;
+
     protected $rules = [
-        'comparisons.*.*.*.value' => 'required|numeric|min:0.11|max:9'
+        'matrixValues' => 'required|array',
+        'matrixValues.*.*' => 'required|numeric|min:0.11|max:9',
     ];
+     protected $messages = [
+        'matrixValues.*.*.required' => 'Semua nilai perbandingan harus diisi.',
+        'matrixValues.*.*.numeric' => 'Nilai perbandingan harus angka.',
+        'matrixValues.*.*.min' => 'Nilai perbandingan minimal 1/9 (sekitar 0.11).',
+        'matrixValues.*.*.max' => 'Nilai perbandingan maksimal 9.',
+    ];
+
+    public function mount(AnpAnalysis $anpAnalysis, AnpElement $anpElement)
+    {
+        $this->analysis = $anpAnalysis->load('candidates'); 
+        $this->criterionElement = $anpElement;
+        $this->alternativesToCompare = $this->analysis->candidates->all();
+
+        $this->initializeMatrix();
+        $this->loadExistingComparison();
+    }
+
+    public function initializeMatrix()
+    {
+        $this->matrixValues = [];
+        foreach ($this->alternativesToCompare as $rowCand) {
+            foreach ($this->alternativesToCompare as $colCand) {
+                if ($rowCand->id == $colCand->id) {
+                    $this->matrixValues[$rowCand->id][$colCand->id] = 1;
+                } else {
+                    $this->matrixValues[$rowCand->id][$colCand->id] = null;
+                }
+            }
+        }
+    }
     
-    protected $messages = [
-        'comparisons.*.*.*.value.required' => 'Semua nilai perbandingan harus diisi.',
-        'comparisons.*.*.*.value.numeric' => 'Nilai perbandingan harus angka.',
-        'comparisons.*.*.*.value.min' => 'Nilai perbandingan minimal 1/9 (sekitar 0.11).',
-        'comparisons.*.*.*.value.max' => 'Nilai perbandingan maksimal 9.',
-    ];
-
-    public function mount($analysisId)
+    public function loadExistingComparison()
     {
-        $this->analysisId = $analysisId;
-        $this->analysis = AnpAnalysis::with(['candidates', 'networkStructure.elements'])->findOrFail($analysisId);
-        
-        // Gunakan session key yang unik
-        $sessionKey = 'pairwise_alternatives_comparisons_' . $this->analysisId;
-        
-        $this->alternatives = $this->analysis->candidates;
-        $this->criteria = $this->analysis->networkStructure->elements;
-        
-        // Load dari session
-        $savedComparisons = session($sessionKey, []);
-        
-        if (!empty($savedComparisons)) {
-            $this->comparisons = $savedComparisons;
-            $this->loadCalculationResults();
-        } else {
-            $this->initializeComparisons();
-        }
-        
-        $this->loadExistingComparisons();
-    }
+        $comparison = AnpAlternativeComparison::where('anp_analysis_id', $this->analysis->id)
+            ->where('anp_element_id', $this->criterionElement->id)
+            ->first();
 
-    public function initializeComparisons()
-    {
-        $this->comparisons = [];
-        $this->priorityVectors = [];
-        $this->consistencyRatios = [];
-        $this->isConsistent = [];
-        $this->calculationResults = [];
-        
-        foreach ($this->criteria as $criterionIndex => $criterion) {
-            $this->comparisons[$criterionIndex] = [];
-            $this->priorityVectors[$criterionIndex] = [];
-            $this->consistencyRatios[$criterionIndex] = null;
-            $this->isConsistent[$criterionIndex] = null;
-            $this->calculationResults[$criterionIndex] = null;
-            
-            foreach ($this->alternatives as $i => $altI) {
-                foreach ($this->alternatives as $j => $altJ) {
-                    if ($i == $j) {
-                        $this->comparisons[$criterionIndex][$i][$j] = [
-                            'value' => 1,
-                            'alt_i_id' => $altI->id,
-                            'alt_j_id' => $altJ->id
-                        ];
-                    } else {
-                        $this->comparisons[$criterionIndex][$i][$j] = [
-                            'value' => null,
-                            'alt_i_id' => $altI->id,
-                            'alt_j_id' => $altJ->id
-                        ];
-                    }
-                }
+        if ($comparison) {
+            $this->matrixValues = $comparison->comparison_data['matrix_values'] ?? $this->matrixValues;
+            $this->priorityVector = $comparison->priority_vector ?? [];
+            if ($comparison->consistency) {
+                $this->consistencyRatio = $comparison->consistency->consistency_ratio;
+                $this->isConsistent = $comparison->consistency->is_consistent;
             }
         }
     }
 
-    public function loadExistingComparisons()
+    public function autoFillMatrix()
     {
-        foreach ($this->criteria as $criterionIndex => $criterion) {
-            $comparison = AnpAlternativeComparison::where('anp_analysis_id', $this->analysis->id)
-                ->where('anp_element_id', $criterion->id)
-                ->first();
+        if (count($this->alternativesToCompare) < 2) return;
 
-            if ($comparison) {
-                $matrixValues = $comparison->comparison_data['matrix_values'] ?? [];
-                
-                foreach ($this->alternatives as $i => $altI) {
-                    foreach ($this->alternatives as $j => $altJ) {
-                        if (isset($matrixValues[$altI->id][$altJ->id])) {
-                            $this->comparisons[$criterionIndex][$i][$j]['value'] = $matrixValues[$altI->id][$altJ->id];
-                        }
-                    }
-                }
-                
-                $this->priorityVectors[$criterionIndex] = $comparison->priority_vector ?? [];
-                
-                if ($comparison->consistency) {
-                    $this->consistencyRatios[$criterionIndex] = $comparison->consistency->consistency_ratio;
-                    $this->isConsistent[$criterionIndex] = $comparison->consistency->is_consistent;
-                }
-            }
-        }
-    }
-
-    public function loadCalculationResults()
-    {
-        foreach ($this->criteria as $criterionIndex => $criterion) {
-            if (!empty($this->comparisons[$criterionIndex])) {
-                $this->calculateForCriterion($criterionIndex);
-            }
-        }
-    }
-
-    public function updated($propertyName)
-    {
-        if (str_starts_with($propertyName, 'comparisons.')) {
-            // Update reciprocal values
-            preg_match('/comparisons\.(\d+)\.(\d+)\.(\d+)\.value/', $propertyName, $matches);
-            if (count($matches) === 4) {
-                $criterionIndex = (int)$matches[1];
-                $i = (int)$matches[2];
-                $j = (int)$matches[3];
-                
-                $value = (float)$this->comparisons[$criterionIndex][$i][$j]['value'];
-                if ($value > 0 && $i !== $j) {
-                    $this->comparisons[$criterionIndex][$j][$i]['value'] = round(1 / $value, 4);
-                }
-                
-                // Save to session dengan key yang unik
-                $sessionKey = 'pairwise_alternatives_comparisons_' . $this->analysisId;
-                session([$sessionKey => $this->comparisons]);
-                
-                $this->calculateForCriterion($criterionIndex);
-            }
-        }
-    }
-
-    public function autoFillForCriterion($criterionIndex)
-    {
-        if (count($this->alternatives) < 2) return;
-
-        $criterion = $this->criteria[$criterionIndex];
         $scoringService = new TestScoringService();
         $scores = [];
-
-        foreach ($this->alternatives as $candidate) {
-            if (strtolower($criterion->name) == 'keterampilan pemrograman' || strtolower($criterion->name) == 'programming') {
+        foreach ($this->alternativesToCompare as $candidate) {
+            if (strtolower($this->criterionElement->name) == 'keterampilan pemrograman' || strtolower($this->criterionElement->name) == 'programming') {
                 $scores[$candidate->id] = $scoringService->getProgrammingScore($candidate);
-            } elseif (str_contains(strtolower($criterion->name), 'riasec')) {
+            } elseif (str_contains(strtolower($this->criterionElement->name), 'riasec')) {
                 $scores[$candidate->id] = $scoringService->getRiasecMatchScore($candidate, $this->analysis->jobPosition);
-            } elseif (str_contains(strtolower($criterion->name), 'mbti')) {
-                $scores[$candidate->id] = $scoringService->getMbtiMatchScore($candidate, $this->analysis->jobPosition);
-            } else {
+            } elseif (str_contains(strtolower($this->criterionElement->name), 'mbti')) {
+                 $scores[$candidate->id] = $scoringService->getMbtiMatchScore($candidate, $this->analysis->jobPosition);
+            }
+            else {
                 $scores[$candidate->id] = 0.5;
             }
         }
 
-        foreach ($this->alternatives as $i => $altI) {
-            foreach ($this->alternatives as $j => $altJ) {
-                if ($i == $j) {
-                    $this->comparisons[$criterionIndex][$i][$j]['value'] = 1;
+        foreach ($this->alternativesToCompare as $rowCand) {
+            foreach ($this->alternativesToCompare as $colCand) {
+                if ($rowCand->id == $colCand->id) {
+                    $this->matrixValues[$rowCand->id][$colCand->id] = 1;
                 } else {
-                    if (isset($scores[$altI->id]) && isset($scores[$altJ->id]) && $scores[$altJ->id] != 0) {
-                        $ratio = $scores[$altI->id] / $scores[$altJ->id];
-                        $saatyValue = $this->convertToSaatyScale($ratio);
-                        $this->comparisons[$criterionIndex][$i][$j]['value'] = $saatyValue;
+                    if (isset($scores[$rowCand->id]) && isset($scores[$colCand->id]) && $scores[$colCand->id] != 0) {
+                        $ratio = $scores[$rowCand->id] / $scores[$colCand->id];
+                        $saatyValue = 1;
+                        if ($ratio > 1) {
+                            if ($ratio >= 8.5) $saatyValue = 9;
+                            elseif ($ratio >= 7.5) $saatyValue = 8;
+                            elseif ($ratio >= 6.5) $saatyValue = 7;
+                            elseif ($ratio >= 5.5) $saatyValue = 6;
+                            elseif ($ratio >= 4.5) $saatyValue = 5;
+                            elseif ($ratio >= 3.5) $saatyValue = 4;
+                            elseif ($ratio >= 2.5) $saatyValue = 3;
+                            elseif ($ratio >= 1.5) $saatyValue = 2;
+                            else $saatyValue = 1; 
+                        } elseif ($ratio < 1) { 
+                             $invRatio = 1 / $ratio;
+                            if ($invRatio >= 8.5) $saatyValue = round(1/9, 3);
+                            elseif ($invRatio >= 7.5) $saatyValue = round(1/8, 3);
+                            elseif ($invRatio >= 6.5) $saatyValue = round(1/7, 3);
+                            elseif ($invRatio >= 5.5) $saatyValue = round(1/6, 3);
+                            elseif ($invRatio >= 4.5) $saatyValue = round(1/5, 3);
+                            elseif ($invRatio >= 3.5) $saatyValue = round(1/4, 3);
+                            elseif ($invRatio >= 2.5) $saatyValue = round(1/3, 3);
+                            elseif ($invRatio >= 1.5) $saatyValue = round(1/2, 3);
+                            else $saatyValue = 1;
+                        }
+                        $this->matrixValues[$rowCand->id][$colCand->id] = $saatyValue;
                     } else {
-                        $this->comparisons[$criterionIndex][$i][$j]['value'] = 1;
+                        $this->matrixValues[$rowCand->id][$colCand->id] = 1;
                     }
                 }
             }
         }
-
-        // Save to session
-        $sessionKey = 'pairwise_alternatives_comparisons_' . $this->analysisId;
-        session([$sessionKey => $this->comparisons]);
-
-        $this->calculateForCriterion($criterionIndex);
         $this->dispatch('notify', ['message' => 'Matriks diisi otomatis berdasarkan skor tes. Harap periksa dan sesuaikan.', 'type' => 'info']);
     }
 
-    private function convertToSaatyScale($ratio)
+    public function updatedMatrixValues($value, $key)
     {
-        if ($ratio > 1) {
-            if ($ratio >= 8.5) return 9;
-            elseif ($ratio >= 7.5) return 8;
-            elseif ($ratio >= 6.5) return 7;
-            elseif ($ratio >= 5.5) return 6;
-            elseif ($ratio >= 4.5) return 5;
-            elseif ($ratio >= 3.5) return 4;
-            elseif ($ratio >= 2.5) return 3;
-            elseif ($ratio >= 1.5) return 2;
-            else return 1;
-        } elseif ($ratio < 1) {
-            $invRatio = 1 / $ratio;
-            if ($invRatio >= 8.5) return round(1/9, 3);
-            elseif ($invRatio >= 7.5) return round(1/8, 3);
-            elseif ($invRatio >= 6.5) return round(1/7, 3);
-            elseif ($invRatio >= 5.5) return round(1/6, 3);
-            elseif ($invRatio >= 4.5) return round(1/5, 3);
-            elseif ($invRatio >= 3.5) return round(1/4, 3);
-            elseif ($invRatio >= 2.5) return round(1/3, 3);
-            elseif ($invRatio >= 1.5) return round(1/2, 3);
-            else return 1;
+        [$rowId, $colId] = explode('.', $key);
+        
+        if ($rowId == $colId) {
+            $this->matrixValues[$rowId][$colId] = 1;
+            return;
         }
-        return 1;
-    }
-
-    public function calculateForCriterion($criterionIndex)
-    {
-        try {
-            $service = new AnpCalculationService();
-            $matrixForCalc = [];
-            
-            foreach ($this->alternatives as $i => $altI) {
-                foreach ($this->alternatives as $j => $altJ) {
-                    if (isset($this->comparisons[$criterionIndex][$i][$j]['value']) && 
-                        $this->comparisons[$criterionIndex][$i][$j]['value'] !== null) {
-                        $matrixForCalc[$altI->id][$altJ->id] = (float) $this->comparisons[$criterionIndex][$i][$j]['value'];
-                    }
-                }
+        
+        $floatValue = (float) $value;
+        
+        if ($floatValue < 0.11 || $floatValue > 9) {
+            if (!isset($this->matrixValues[$rowId][$colId])) {
+                $this->matrixValues[$rowId][$colId] = 1;
             }
-
-            $this->calculationResults[$criterionIndex] = $service->calculateEigenvectorAndCR($matrixForCalc);
-
-            if (isset($this->calculationResults[$criterionIndex]['error'])) {
-                $this->dispatch('notify', ['message' => 'Error: ' . $this->calculationResults[$criterionIndex]['error'], 'type' => 'error']);
-            } else {
-                $this->priorityVectors[$criterionIndex] = $this->calculationResults[$criterionIndex]['priority_vector'];
-                $this->consistencyRatios[$criterionIndex] = $this->calculationResults[$criterionIndex]['consistency_ratio'];
-                $this->isConsistent[$criterionIndex] = $this->calculationResults[$criterionIndex]['is_consistent'];
-                
-                $criterion = $this->criteria[$criterionIndex];
-                $message = 'Kalkulasi untuk ' . $criterion->name . ' selesai. CR: ' . round($this->consistencyRatios[$criterionIndex], 4) . 
-                          ($this->isConsistent[$criterionIndex] ? ' (Konsisten)' : ' (Tidak Konsisten!)');
-                $this->dispatch('notify', ['message' => $message, 'type' => $this->isConsistent[$criterionIndex] ? 'success' : 'error']);
-            }
-        } catch (\Exception $e) {
-            $this->dispatch('notify', ['message' => 'Error calculating consistency: ' . $e->getMessage(), 'type' => 'error']);
+            $this->addError("matrixValues.{$rowId}.{$colId}", 'Nilai harus antara 0.11 (1/9) dan 9');
+            return;
         }
+        
+        $this->resetErrorBag("matrixValues.{$rowId}.{$colId}");
+        $this->resetErrorBag("matrixValues.{$colId}.{$rowId}");
+        
+        $this->matrixValues[$rowId][$colId] = $floatValue;
+        
+        if ($floatValue > 0) {
+            $reciprocalValue = round(1 / $floatValue, 4);
+            $this->matrixValues[$colId][$rowId] = $reciprocalValue;
+        }
+        $this->consistencyRatio = null;
+        $this->isConsistent = null;
+        $this->priorityVector = [];
+        $this->calculationResult = null;
+        
     }
 
-    public function calculateAllConsistency()
-    {
-        foreach ($this->criteria as $criterionIndex => $criterion) {
-            $this->calculateForCriterion($criterionIndex);
-        }
-    }
-
-    public function validateMatrix($criterionIndex): bool
+    protected function validateMatrix(): bool
     {
         $hasEmptyCells = false;
         $emptyCount = 0;
         
-        foreach ($this->alternatives as $i => $altI) {
-            foreach ($this->alternatives as $j => $altJ) {
-                if ($i !== $j) {
-                    $value = $this->comparisons[$criterionIndex][$i][$j]['value'] ?? null;
+        foreach ($this->elementsToCompare as $rowElement) {
+            foreach ($this->elementsToCompare as $colElement) {
+                if ($rowElement->id !== $colElement->id) {
+                    $value = $this->matrixValues[$rowElement->id][$colElement->id] ?? null;
                     if ($value === null || $value === '' || !is_numeric($value)) {
                         $hasEmptyCells = true;
                         $emptyCount++;
@@ -286,9 +187,8 @@ class PairwiseAlternativesMatrix extends Component
         }
         
         if ($hasEmptyCells) {
-            $criterion = $this->criteria[$criterionIndex];
             $this->dispatch('notify', [
-                'message' => "Perhatian pada kriteria {$criterion->name}: Ada {$emptyCount} sel yang belum diisi. Harap lengkapi semua nilai perbandingan.",
+                'message' => "Perhatian: Ada {$emptyCount} sel yang belum diisi. Harap lengkapi semua nilai perbandingan.",
                 'type' => 'warning'
             ]);
             return false;
@@ -297,84 +197,119 @@ class PairwiseAlternativesMatrix extends Component
         return true;
     }
 
-    public function saveComparisons()
+
+    public function recalculateConsistency()
     {
-        $allValid = true;
+        try {
+            $this->validate([
+                'matrixValues.*.*' => 'required|numeric|min:0.11|max:9'
+            ], [
+                'matrixValues.*.*.required' => 'Nilai ini wajib diisi.',
+                'matrixValues.*.*.numeric' => 'Nilai harus berupa angka.',
+                'matrixValues.*.*.min' => 'Nilai minimal adalah 1/9.',
+                'matrixValues.*.*.max' => 'Nilai maksimal adalah 9.',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->isConsistent = false;
+            $this->dispatch('notify', ['message' => 'Validasi gagal. Harap isi semua nilai perbandingan dengan benar.', 'type' => 'error']);
+            throw $e;
+        }
+
+        $service = new \App\Services\AnpCalculationService();
+        $matrixForCalc = [];
         
-        foreach ($this->criteria as $criterionIndex => $criterion) {
-            if (!$this->validateMatrix($criterionIndex)) {
-                $allValid = false;
-                continue;
-            }
-            
-            if (is_null($this->isConsistent[$criterionIndex])) {
-                $this->calculateForCriterion($criterionIndex);
-            }
-            
-            if (!$this->isConsistent[$criterionIndex]) {
-                $this->dispatch('notify', ['message' => "Matriks untuk kriteria {$criterion->name} tidak konsisten.", 'type' => 'error']);
-                $allValid = false;
-                continue;
-            }
-            
-            $comparisonDataForDb = [];
-            foreach ($this->alternatives as $i => $altI) {
-                foreach ($this->alternatives as $j => $altJ) {
-                    $comparisonDataForDb[$altI->id][$altJ->id] = (float) $this->comparisons[$criterionIndex][$i][$j]['value'];
+        foreach ($this->alternativesToCompare as $rowAlt) {
+            foreach ($this->alternativesToCompare as $colAlt) {
+                if (isset($this->matrixValues[$rowAlt->id][$colAlt->id])) {
+                    $matrixForCalc[$rowAlt->id][$colAlt->id] = (float) $this->matrixValues[$rowAlt->id][$colAlt->id];
                 }
             }
+        }
 
-            $comparison = AnpAlternativeComparison::updateOrCreate(
-                [
-                    'anp_analysis_id' => $this->analysis->id,
-                    'anp_element_id' => $criterion->id,
-                ],
-                [
-                    'comparison_data' => [
-                        'matrix_values' => $comparisonDataForDb, 
-                        'alternative_ids' => $this->alternatives->pluck('id')->all()
-                    ],
-                    'priority_vector' => $this->priorityVectors[$criterionIndex],
-                ]
-            );
-            
-            $comparison->consistency()->updateOrCreate(
-                [],
-                [
-                    'consistency_ratio' => $this->consistencyRatios[$criterionIndex],
-                    'is_consistent' => $this->isConsistent[$criterionIndex],
-                ]
-            );
+        $this->calculationResult = $service->calculateEigenvectorAndCR($matrixForCalc);
+
+        if (isset($this->calculationResult['error'])) {
+            $this->dispatch('notify', ['message' => 'Error: ' . $this->calculationResult['error'], 'type' => 'error']);
+        } else {
+            $this->priorityVector = $this->calculationResult['priority_vector'];
+            $this->consistencyRatio = $this->calculationResult['consistency_ratio'];
+            $this->isConsistent = $this->calculationResult['is_consistent'];
+            $message = 'Kalkulasi selesai. CR: ' . round($this->consistencyRatio, 4) . ($this->isConsistent ? ' (Konsisten)' : ' (Tidak Konsisten!)');
+            $this->dispatch('notify', ['message' => $message, 'type' => $this->isConsistent ? 'success' : 'error']);
         }
-        
-        if ($allValid) {
-            $this->dispatch('notify', ['message' => 'Semua perbandingan alternatif berhasil disimpan.', 'type' => 'success']);
-        }
-        
-        return $allValid;
     }
 
-    public function saveAndContinue()
+
+    public function saveComparisons()
     {
-        if (!$this->saveComparisons()) {
+        $this->recalculateConsistency();
+
+        if (is_null($this->isConsistent)) {
+            $this->dispatch('notify', ['message' => 'Gagal menyimpan. Hitung konsistensi dulu.', 'type' => 'error']);
+            return;
+        }
+         if (!$this->isConsistent) {
+            $this->dispatch('notify', ['message' => 'Gagal menyimpan. Matriks tidak konsisten.', 'type' => 'error']);
             return;
         }
         
-        // Hapus session setelah berhasil disimpan
-        $sessionKey = 'pairwise_alternatives_comparisons_' . $this->analysisId;
-        session()->forget($sessionKey);
+        $comparisonDataForDb = [];
+        foreach($this->alternativesToCompare as $rowCand){
+            foreach($this->alternativesToCompare as $colCand){
+                $comparisonDataForDb[$rowCand->id][$colCand->id] = (float) $this->matrixValues[$rowCand->id][$colCand->id];
+            }
+        }
+
+        $comparison = AnpAlternativeComparison::updateOrCreate(
+            [
+                'anp_analysis_id' => $this->analysis->id,
+                'anp_element_id' => $this->criterionElement->id,
+            ],
+            [
+                'comparison_data' => ['matrix_values' => $comparisonDataForDb, 'alternative_ids' => collect($this->alternativesToCompare)->pluck('id')->all()],
+                'priority_vector' => $this->priorityVector,
+            ]
+        );
         
-        $this->calculateAndFinish();
+        $comparison->consistency()->updateOrCreate(
+            [],
+            [
+                'consistency_ratio' => $this->consistencyRatio,
+                'is_consistent' => $this->isConsistent,
+            ]
+        );
+
+        $this->dispatch('notify', ['message' => 'Perbandingan alternatif berhasil disimpan.', 'type' => 'success']);
     }
 
     public function calculateAndFinish()
     {
-        Log::info('Mengecek kesiapan total analisis...');
+        $this->saveComparisons();
+
+        if (!$this->isConsistent) {
+            Log::warning('Proses berhenti: Matriks saat ini tidak konsisten.'); 
+            $this->dispatch('notify', [
+                'message' => 'Perbandingan untuk kriteria ini belum konsisten. Harap hitung konsistensi terlebih dahulu.',
+                'type' => 'error'
+            ]);
+            return;
+        }
+
+        $nextElement = $this->findNextPendingAlternativeComparison();
+        if ($nextElement) {
+            Log::info('Proses dialihkan ke perbandingan alternatif berikutnya.'); 
+            return redirect()->route('h-r.anp.analysis.alternative.pairwise.form', [
+                'anpAnalysis' => $this->analysis->id,
+                'anpElement' => $nextElement->id
+            ]);
+        }
+
+        Log::info('Mengecek kesiapan total analisis...'); 
         $this->analysis->refresh();
         
         if (!$this->analysis->isReadyForCalculation()) {
             $missingComparisons = $this->findMissingComparisons();
-            Log::error('PROSES GAGAL: isReadyForCalculation() return false. Bagian yang kurang: ' . $missingComparisons);
+        Log::error('PROSES GAGAL: isReadyForCalculation() return false. Bagian yang kurang: ' . $missingComparisons); 
             
             $this->dispatch('notify', [
                 'message' => 'Masih ada perbandingan yang belum selesai: ' . $missingComparisons,
@@ -388,15 +323,15 @@ class PairwiseAlternativesMatrix extends Component
             'type' => 'info'
         ]);
 
-        Log::info('Analisis siap! Memulai proses kalkulasi di AnpCalculationService.');
-        
+        Log::info('Analisis siap! Memulai proses kalkulasi di AnpCalculationService.'); // LOG 6
         try {
             $this->analysis->update(['status' => 'calculating']);
             
-            $calculationService = app(AnpCalculationService::class);
+            $calculationService = app(\App\Services\AnpCalculationService::class);
+            
             $result = $calculationService->processAnalysis($this->analysis);
 
-            Log::info("ANP Calculation completed for Analysis ID: {$this->analysis->id}", $result);
+            \Log::info("ANP Calculation completed for Analysis ID: {$this->analysis->id}", $result);
 
             return redirect()->route('h-r.anp.analysis.show', $this->analysis->id)
                 ->with('success', 'Kalkulasi ANP berhasil diselesaikan!');
@@ -404,7 +339,7 @@ class PairwiseAlternativesMatrix extends Component
         } catch (\Exception $e) {
             $this->analysis->update(['status' => 'alternatives_pending']);
             
-            Log::error("ANP Calculation failed for Analysis ID: {$this->analysis->id}", [
+            \Log::error("ANP Calculation failed for Analysis ID: {$this->analysis->id}", [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -415,6 +350,21 @@ class PairwiseAlternativesMatrix extends Component
             ]);
             return;
         }
+    }
+
+    private function findNextPendingAlternativeComparison()
+    {
+        $analysis = $this->analysis->load(['networkStructure.elements']);
+        $allCriteriaElements = $analysis->networkStructure->elements;
+        $completedAlternativeComps = $analysis->alternativeComparisons()->pluck('anp_element_id');
+
+        foreach ($allCriteriaElements as $element) {
+            if (!$completedAlternativeComps->contains($element->id) && $element->id != $this->criterionElement->id) {
+                return $element;
+            }
+        }
+        
+        return null;
     }
 
     private function findMissingComparisons(): string
@@ -459,31 +409,6 @@ class PairwiseAlternativesMatrix extends Component
         return implode(', ', $missing);
     }
 
-    public function getCurrentCriterion()
-    {
-        return $this->criteria[$this->currentCriterionIndex] ?? null;
-    }
-
-    public function nextCriterion()
-    {
-        if ($this->currentCriterionIndex < count($this->criteria) - 1) {
-            $this->currentCriterionIndex++;
-        }
-    }
-
-    public function previousCriterion()
-    {
-        if ($this->currentCriterionIndex > 0) {
-            $this->currentCriterionIndex--;
-        }
-    }
-
-    public function setCriterion($index)
-    {
-        if ($index >= 0 && $index < count($this->criteria)) {
-            $this->currentCriterionIndex = $index;
-        }
-    }
 
     public function render()
     {
