@@ -178,7 +178,10 @@ class PairwiseInterdependenciesMatrix extends Component
         $comparison = AnpInterdependencyComparison::updateOrCreate(
             ['anp_analysis_id' => $this->analysis->id, 'anp_dependency_id' => $this->dependency->id],
             [
-                'comparison_data' => ['matrix_values' => $this->matrixValues],
+                'comparison_data' => [
+                    'matrix_values' => $this->matrixValues,
+                    'element_ids' => array_map(fn($elem) => $elem->id, $this->sourceElementsToCompare)
+                ],
                 'priority_vector' => $this->priorityVector,
             ]
         );

@@ -249,7 +249,7 @@
                                                                 <span class="badge bg-gradient-dark">Goal (Tujuan Utama)</span>
                                                             @else
                                                                 <span class="badge bg-gradient-success">
-                                                                    {{ $comparison->controlCriterionable->name ?? 'N/A' }}
+                                                                    {{ $comparison->controlCriterionable->name ?? 'Antar Cluster' }}
                                                                 </span>
                                                             @endif
                                                         </div>
