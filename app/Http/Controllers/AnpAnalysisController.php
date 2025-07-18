@@ -65,39 +65,27 @@ class AnpAnalysisController extends Controller
      */
     public function show(AnpAnalysis $anpAnalysis)
     {
-        // Tambahkan eager loading untuk semua relasi yang diperlukan
         $anpAnalysis->load([
         'jobPosition', 
         'candidates', 
         'results.candidate',
         
-        'networkStructure.clusters' => function($query) {
-            $query->withTrashed(); // Tampilkan cluster yang sudah dihapus
+        'networkStructure.clusters' => function($query) use ($anpAnalysis) {
+            $query->where('anp_network_structure_id', $anpAnalysis->anp_network_structure_id);
         },
-        'networkStructure.clusters.elements' => function($query) {
-            $query->withTrashed(); // Tampilkan element yang sudah dihapus
+        'networkStructure.clusters.elements' => function($query) use ($anpAnalysis) {
+            $query->where('anp_network_structure_id', $anpAnalysis->anp_network_structure_id);
         },
-        'networkStructure.dependencies' => function($query) {
-            $query->withTrashed(); // Tampilkan dependency yang sudah dihapus
+        'networkStructure.dependencies' => function($query) use ($anpAnalysis) {
+            $query->where('anp_network_structure_id', $anpAnalysis->anp_network_structure_id);
         },
-        'networkStructure.dependencies.sourceable' => function($query) {
-            $query->withTrashed();
-        }, 
-        'networkStructure.dependencies.targetable' => function($query) {
-            $query->withTrashed();
-        },
-        'criteriaComparisons.controlCriterionable' => function($query) {
-            // Cek apakah controlCriterionable adalah AnpCluster atau AnpElement
-            $query->withTrashed();
-        }, 
+        'networkStructure.dependencies.sourceable',
+        'networkStructure.dependencies.targetable',
+        'criteriaComparisons.controlCriterionable',
         'criteriaComparisons.consistency',
-        'interdependencyComparisons.dependency' => function($query) {
-            $query->withTrashed();
-        }, 
+        'interdependencyComparisons.dependency',
         'interdependencyComparisons.consistency',
-        'alternativeComparisons.element' => function($query) {
-            $query->withTrashed();
-        }, 
+        'alternativeComparisons.element',
         'alternativeComparisons.consistency'
     ]);
     

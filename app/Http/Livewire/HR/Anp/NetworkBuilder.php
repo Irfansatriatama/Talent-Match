@@ -32,112 +32,102 @@ class NetworkBuilder extends Component
 
     protected $listeners = ['networkStructureUpdated' => 'loadNetworkData'];
 
-    // Update mount method untuk menerima parameter dari route
     public function mount(AnpAnalysis $anpAnalysis = null)
     {
-        // Cek apakah ada parameter dari route
         if ($anpAnalysis) {
             $this->analysis = $anpAnalysis;
-            // Set session untuk komponen lain yang mungkin membutuhkan
             session()->put('current_anp_analysis_id', $anpAnalysis->id);
         } else {
-            // Fallback ke session jika tidak ada parameter
             $analysisId = session('current_anp_analysis_id');
-            
             if (!$analysisId) {
-                session()->flash('error', 'Sesi analisis tidak ditemukan. Harap mulai dari awal.');
                 return redirect()->route('h-r.anp.analysis.index');
             }
-            
             $this->analysis = AnpAnalysis::findOrFail($analysisId);
         }
         
-        // Reset semua state properties
         $this->resetFormFields();
         
-        if ($this->analysis->anp_network_structure_id) {
-            // Mode EDIT: Load existing network structure
-            $this->networkStructure = AnpNetworkStructure::find($this->analysis->anp_network_structure_id);
-            
-            // Hanya load data yang terkait dengan network structure ini
-            if ($this->networkStructure) {
-                $this->loadNetworkData();
-            }
-        } else {
-            // Mode CREATE: Buat struktur baru UNIK untuk analisis ini
+        // SELALU buat struktur BARU untuk setiap analisis!
+        if (!$this->analysis->anp_network_structure_id) {
+            // CREATE NEW unique structure
             $this->networkStructure = AnpNetworkStructure::create([
-                'name' => 'Jaringan untuk ' . $this->analysis->name . ' (ID: ' . $this->analysis->id . ')',
-                'description' => 'Struktur jaringan untuk analisis ' . $this->analysis->name,
+                'name' => 'Network untuk ' . $this->analysis->name . ' (ID: ' . $this->analysis->id . ')',
+                'description' => 'Struktur jaringan unik untuk analisis ' . $this->analysis->name,
             ]);
             
             $this->analysis->anp_network_structure_id = $this->networkStructure->id;
             $this->analysis->save();
             
-            // Copy struktur default jika ada
-            $this->copyDefaultStructure();
+            // Copy template struktur jika ada
+            $this->copyTemplateStructure();
+        } else {
+            // Load struktur yang sudah ada untuk analisis ini
+            $this->networkStructure = AnpNetworkStructure::find($this->analysis->anp_network_structure_id);
         }
+        
+        $this->loadNetworkData();
     }
 
-    // Fungsi baru untuk copy struktur default
-    private function copyDefaultStructure()
+    private function copyTemplateStructure()
     {
-        $defaultStructure = AnpNetworkStructure::where('name', 'LIKE', '%Default%')
-            ->orWhere('name', 'LIKE', '%Standar%')
+        // Copy dari template, BUKAN dari struktur yang dipakai analisis lain
+        $templateStructure = AnpNetworkStructure::where('name', 'LIKE', '%Template%')
+            ->orWhere('name', 'LIKE', '%Default Template%')
             ->first();
             
-        if ($defaultStructure) {
-            // Copy clusters
-            $clusterMapping = [];
-            foreach ($defaultStructure->clusters as $oldCluster) {
-                $newCluster = $this->networkStructure->clusters()->create([
-                    'name' => $oldCluster->name,
-                    'description' => $oldCluster->description,
+        if (!$templateStructure) {
+            // Jika tidak ada template, kosongkan saja
+            return;
+        }
+        
+        // Copy clusters dengan ID BARU
+        $clusterMapping = [];
+        foreach ($templateStructure->clusters as $oldCluster) {
+            $newCluster = $this->networkStructure->clusters()->create([
+                'name' => $oldCluster->name,
+                'description' => $oldCluster->description,
+            ]);
+            $clusterMapping[$oldCluster->id] = $newCluster->id;
+        }
+        
+        // Copy elements dengan ID BARU
+        $elementMapping = [];
+        foreach ($templateStructure->elements as $oldElement) {
+            $newElement = $this->networkStructure->elements()->create([
+                'name' => $oldElement->name,
+                'description' => $oldElement->description,
+                'anp_cluster_id' => $clusterMapping[$oldElement->anp_cluster_id] ?? null,
+            ]);
+            $elementMapping[$oldElement->id] = $newElement->id;
+        }
+        
+        // Copy dependencies dengan ID BARU
+        foreach ($templateStructure->dependencies as $oldDep) {
+            // Map ke ID baru
+            $sourceId = null;
+            $targetId = null;
+            
+            if ($oldDep->sourceable_type == AnpCluster::class) {
+                $sourceId = $clusterMapping[$oldDep->sourceable_id] ?? null;
+            } else {
+                $sourceId = $elementMapping[$oldDep->sourceable_id] ?? null;
+            }
+            
+            if ($oldDep->targetable_type == AnpCluster::class) {
+                $targetId = $clusterMapping[$oldDep->targetable_id] ?? null;
+            } else {
+                $targetId = $elementMapping[$oldDep->targetable_id] ?? null;
+            }
+            
+            if ($sourceId && $targetId) {
+                $this->networkStructure->dependencies()->create([
+                    'sourceable_type' => $oldDep->sourceable_type,
+                    'sourceable_id' => $sourceId,
+                    'targetable_type' => $oldDep->targetable_type,
+                    'targetable_id' => $targetId,
+                    'description' => $oldDep->description,
                 ]);
-                $clusterMapping[$oldCluster->id] = $newCluster->id;
             }
-            
-            // Copy elements
-            $elementMapping = [];
-            foreach ($defaultStructure->elements as $oldElement) {
-                $newElement = $this->networkStructure->elements()->create([
-                    'name' => $oldElement->name,
-                    'description' => $oldElement->description,
-                    'anp_cluster_id' => isset($clusterMapping[$oldElement->anp_cluster_id]) 
-                        ? $clusterMapping[$oldElement->anp_cluster_id] 
-                        : null,
-                ]);
-                $elementMapping[$oldElement->id] = $newElement->id;
-            }
-            
-            // Copy dependencies
-            foreach ($defaultStructure->dependencies as $oldDep) {
-                $sourceId = null;
-                $targetId = null;
-                
-                if ($oldDep->sourceable_type == AnpCluster::class) {
-                    $sourceId = $clusterMapping[$oldDep->sourceable_id] ?? null;
-                } elseif ($oldDep->sourceable_type == AnpElement::class) {
-                    $sourceId = $elementMapping[$oldDep->sourceable_id] ?? null;
-                }
-                
-                if ($oldDep->targetable_type == AnpCluster::class) {
-                    $targetId = $clusterMapping[$oldDep->targetable_id] ?? null;
-                } elseif ($oldDep->targetable_type == AnpElement::class) {
-                    $targetId = $elementMapping[$oldDep->targetable_id] ?? null;
-                }
-                
-                if ($sourceId && $targetId) {
-                    $this->networkStructure->dependencies()->create([
-                        'sourceable_type' => $oldDep->sourceable_type,
-                        'sourceable_id' => $sourceId,
-                        'targetable_type' => $oldDep->targetable_type,
-                        'targetable_id' => $targetId,
-                        'description' => $oldDep->description,
-                    ]);
-                }
-            }
-            
-            $this->loadNetworkData();
         }
     }
 
