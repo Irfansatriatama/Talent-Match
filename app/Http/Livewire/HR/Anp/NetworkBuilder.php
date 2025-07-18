@@ -7,7 +7,10 @@ use App\Models\AnpNetworkStructure;
 use App\Models\AnpElement;
 use App\Models\AnpCluster;
 use App\Models\AnpDependency;
+use App\Models\AnpStructureSnapshot;
 use Livewire\Component;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class NetworkBuilder extends Component
 {
@@ -45,90 +48,113 @@ class NetworkBuilder extends Component
             $this->analysis = AnpAnalysis::findOrFail($analysisId);
         }
         
+        $this->initializeNetworkStructure();
+        $this->loadNetworkData();
+    }
+
+    private function initializeNetworkStructure()
+    {
         $this->resetFormFields();
         
-        // SELALU buat struktur BARU untuk setiap analisis!
         if (!$this->analysis->anp_network_structure_id) {
-            // CREATE NEW unique structure
+            // Create NEW unique structure for this analysis
             $this->networkStructure = AnpNetworkStructure::create([
                 'name' => 'Network untuk ' . $this->analysis->name . ' (ID: ' . $this->analysis->id . ')',
                 'description' => 'Struktur jaringan unik untuk analisis ' . $this->analysis->name,
+                'is_frozen' => false,
+                'version' => 1
             ]);
             
             $this->analysis->anp_network_structure_id = $this->networkStructure->id;
             $this->analysis->save();
             
-            // Copy template struktur jika ada
+            // Copy template structure if exists
             $this->copyTemplateStructure();
+            
+            Log::info('Created new network structure', [
+                'analysis_id' => $this->analysis->id,
+                'structure_id' => $this->networkStructure->id
+            ]);
         } else {
-            // Load struktur yang sudah ada untuk analisis ini
+            // Load existing structure
             $this->networkStructure = AnpNetworkStructure::find($this->analysis->anp_network_structure_id);
+            
+            // Check if structure is frozen
+            if ($this->networkStructure->is_frozen) {
+                // If frozen, we need to work on a new version
+                $this->dispatch('notify', [
+                    'message' => 'Struktur ini telah di-freeze. Bekerja pada versi baru.',
+                    'type' => 'info'
+                ]);
+            }
         }
-        
-        $this->loadNetworkData();
     }
 
     private function copyTemplateStructure()
     {
-        // Copy dari template, BUKAN dari struktur yang dipakai analisis lain
         $templateStructure = AnpNetworkStructure::where('name', 'LIKE', '%Template%')
             ->orWhere('name', 'LIKE', '%Default Template%')
             ->first();
             
         if (!$templateStructure) {
-            // Jika tidak ada template, kosongkan saja
+            Log::info('No template structure found');
             return;
         }
         
-        // Copy clusters dengan ID BARU
-        $clusterMapping = [];
-        foreach ($templateStructure->clusters as $oldCluster) {
-            $newCluster = $this->networkStructure->clusters()->create([
-                'name' => $oldCluster->name,
-                'description' => $oldCluster->description,
-            ]);
-            $clusterMapping[$oldCluster->id] = $newCluster->id;
-        }
-        
-        // Copy elements dengan ID BARU
-        $elementMapping = [];
-        foreach ($templateStructure->elements as $oldElement) {
-            $newElement = $this->networkStructure->elements()->create([
-                'name' => $oldElement->name,
-                'description' => $oldElement->description,
-                'anp_cluster_id' => $clusterMapping[$oldElement->anp_cluster_id] ?? null,
-            ]);
-            $elementMapping[$oldElement->id] = $newElement->id;
-        }
-        
-        // Copy dependencies dengan ID BARU
-        foreach ($templateStructure->dependencies as $oldDep) {
-            // Map ke ID baru
-            $sourceId = null;
-            $targetId = null;
-            
-            if ($oldDep->sourceable_type == AnpCluster::class) {
-                $sourceId = $clusterMapping[$oldDep->sourceable_id] ?? null;
-            } else {
-                $sourceId = $elementMapping[$oldDep->sourceable_id] ?? null;
-            }
-            
-            if ($oldDep->targetable_type == AnpCluster::class) {
-                $targetId = $clusterMapping[$oldDep->targetable_id] ?? null;
-            } else {
-                $targetId = $elementMapping[$oldDep->targetable_id] ?? null;
-            }
-            
-            if ($sourceId && $targetId) {
-                $this->networkStructure->dependencies()->create([
-                    'sourceable_type' => $oldDep->sourceable_type,
-                    'sourceable_id' => $sourceId,
-                    'targetable_type' => $oldDep->targetable_type,
-                    'targetable_id' => $targetId,
-                    'description' => $oldDep->description,
+        DB::transaction(function() use ($templateStructure) {
+            // Copy clusters with NEW IDs
+            $clusterMapping = [];
+            foreach ($templateStructure->clusters as $oldCluster) {
+                $newCluster = $this->networkStructure->clusters()->create([
+                    'name' => $oldCluster->name,
+                    'description' => $oldCluster->description,
                 ]);
+                $clusterMapping[$oldCluster->id] = $newCluster->id;
             }
-        }
+            
+            // Copy elements with NEW IDs
+            $elementMapping = [];
+            foreach ($templateStructure->elements as $oldElement) {
+                $newElement = $this->networkStructure->elements()->create([
+                    'name' => $oldElement->name,
+                    'description' => $oldElement->description,
+                    'anp_cluster_id' => isset($clusterMapping[$oldElement->anp_cluster_id]) 
+                        ? $clusterMapping[$oldElement->anp_cluster_id] 
+                        : null,
+                ]);
+                $elementMapping[$oldElement->id] = $newElement->id;
+            }
+            
+            // Copy dependencies with NEW IDs
+            foreach ($templateStructure->dependencies as $oldDep) {
+                $sourceId = null;
+                $targetId = null;
+                
+                if ($oldDep->sourceable_type == AnpCluster::class) {
+                    $sourceId = $clusterMapping[$oldDep->sourceable_id] ?? null;
+                } else {
+                    $sourceId = $elementMapping[$oldDep->sourceable_id] ?? null;
+                }
+                
+                if ($oldDep->targetable_type == AnpCluster::class) {
+                    $targetId = $clusterMapping[$oldDep->targetable_id] ?? null;
+                } else {
+                    $targetId = $elementMapping[$oldDep->targetable_id] ?? null;
+                }
+                
+                if ($sourceId && $targetId) {
+                    $this->networkStructure->dependencies()->create([
+                        'sourceable_type' => $oldDep->sourceable_type,
+                        'sourceable_id' => $sourceId,
+                        'targetable_type' => $oldDep->targetable_type,
+                        'targetable_id' => $targetId,
+                        'description' => $oldDep->description,
+                    ]);
+                }
+            }
+        });
+        
+        Log::info('Template structure copied successfully');
     }
 
     private function resetFormFields()
@@ -148,12 +174,14 @@ class NetworkBuilder extends Component
     public function loadNetworkData()
     {
         if ($this->networkStructure) {
-            // PENTING: Hanya load data yang terkait dengan network structure ini
+            // Only load NON-deleted data
             $this->allElements = $this->networkStructure->elements()
+                ->whereNull('deleted_at')
                 ->orderBy('name')
                 ->get();
                 
             $this->allClusters = $this->networkStructure->clusters()
+                ->whereNull('deleted_at')
                 ->orderBy('name')
                 ->get();
         } else {
@@ -169,7 +197,14 @@ class NetworkBuilder extends Component
             'selectedClusterForNewElement' => 'nullable|exists:anp_clusters,id',
         ]);
 
-        // PENTING: Pastikan element dibuat dengan network structure yang benar
+        if ($this->networkStructure->is_frozen) {
+            $this->dispatch('notify', [
+                'message' => 'Struktur ini sudah di-freeze. Tidak dapat menambah elemen.',
+                'type' => 'error'
+            ]);
+            return;
+        }
+
         $this->networkStructure->elements()->create([
             'name' => $this->newElementName,
             'description' => $this->newElementDescription,
@@ -186,18 +221,34 @@ class NetworkBuilder extends Component
 
     public function deleteElement($elementId)
     {
-        // Hapus dependencies terkait
-        AnpDependency::where(function ($q) use ($elementId) {
-            $q->where('sourceable_type', AnpElement::class)->where('sourceable_id', $elementId);
-        })->orWhere(function ($q) use ($elementId) {
-            $q->where('targetable_type', AnpElement::class)->where('targetable_id', $elementId);
-        })->delete();
+        if ($this->networkStructure->is_frozen) {
+            $this->dispatch('notify', [
+                'message' => 'Struktur ini sudah di-freeze. Tidak dapat menghapus elemen.',
+                'type' => 'error'
+            ]);
+            return;
+        }
+
+        $element = AnpElement::find($elementId);
         
-        // Soft delete element
-        AnpElement::find($elementId)->delete();
-        
-        $this->loadNetworkData();
-        $this->dispatch('notify', ['message' => 'Elemen berhasil dihapus.', 'type' => 'success']);
+        if ($element) {
+            DB::transaction(function() use ($element) {
+                // Soft delete dependencies using model relationships
+                $element->sourceDependencies()->each(function($dep) {
+                    $dep->delete(); // This triggers soft delete
+                });
+                
+                $element->targetDependencies()->each(function($dep) {
+                    $dep->delete(); // This triggers soft delete
+                });
+                
+                // Soft delete element
+                $element->delete();
+            });
+            
+            $this->loadNetworkData();
+            $this->dispatch('notify', ['message' => 'Elemen berhasil dihapus.', 'type' => 'success']);
+        }
     }
 
     public function addCluster()
@@ -205,6 +256,14 @@ class NetworkBuilder extends Component
         $this->validate([
             'newClusterName' => 'required|string|max:255',
         ]);
+
+        if ($this->networkStructure->is_frozen) {
+            $this->dispatch('notify', [
+                'message' => 'Struktur ini sudah di-freeze. Tidak dapat menambah cluster.',
+                'type' => 'error'
+            ]);
+            return;
+        }
 
         $this->networkStructure->clusters()->create([
             'name' => $this->newClusterName,
@@ -220,30 +279,21 @@ class NetworkBuilder extends Component
 
     public function deleteCluster($clusterId)
     {
+        if ($this->networkStructure->is_frozen) {
+            $this->dispatch('notify', [
+                'message' => 'Struktur ini sudah di-freeze. Tidak dapat menghapus cluster.',
+                'type' => 'error'
+            ]);
+            return;
+        }
+
         $cluster = AnpCluster::find($clusterId);
+        
         if ($cluster) {
-            // Hapus dependencies terkait cluster
-            AnpDependency::where(function ($q) use ($clusterId) {
-                $q->where('sourceable_type', AnpCluster::class)->where('sourceable_id', $clusterId);
-            })->orWhere(function ($q) use ($clusterId) {
-                $q->where('targetable_type', AnpCluster::class)->where('targetable_id', $clusterId);
-            })->delete();
-            
-            // Hapus dependencies terkait elements dalam cluster
-            $elementIds = AnpElement::where('anp_cluster_id', $clusterId)->pluck('id')->toArray();
-            if (!empty($elementIds)) {
-                AnpDependency::where(function ($q) use ($elementIds) {
-                    $q->where('sourceable_type', AnpElement::class)->whereIn('sourceable_id', $elementIds);
-                })->orWhere(function ($q) use ($elementIds) {
-                    $q->where('targetable_type', AnpElement::class)->whereIn('targetable_id', $elementIds);
-                })->delete();
-            }
-            
-            // CASCADE DELETE: Hapus semua elements dalam cluster
-            AnpElement::where('anp_cluster_id', $clusterId)->delete();
-            
-            // Hapus cluster
-            $cluster->delete();
+            DB::transaction(function() use ($cluster) {
+                // Use model's soft delete which will cascade
+                $cluster->delete();
+            });
             
             $this->loadNetworkData();
             $this->dispatch('notify', ['message' => 'Cluster berhasil dihapus.', 'type' => 'success']);
@@ -257,6 +307,14 @@ class NetworkBuilder extends Component
             'targetId' => 'required|integer',
         ]);
 
+        if ($this->networkStructure->is_frozen) {
+            $this->dispatch('notify', [
+                'message' => 'Struktur ini sudah di-freeze. Tidak dapat menambah dependensi.',
+                'type' => 'error'
+            ]);
+            return;
+        }
+
         if ($this->sourceId == $this->targetId && $this->sourceType == $this->targetType) {
             $this->dispatch('notify', ['message' => 'Sumber dan target tidak boleh sama.', 'type' => 'error']);
             return;
@@ -267,6 +325,7 @@ class NetworkBuilder extends Component
             ->where('sourceable_id', $this->sourceId)
             ->where('targetable_type', $this->targetType == 'element' ? AnpElement::class : AnpCluster::class)
             ->where('targetable_id', $this->targetId)
+            ->whereNull('deleted_at') // Check for soft deletes
             ->exists();
 
         if ($exists) {
@@ -292,9 +351,20 @@ class NetworkBuilder extends Component
 
     public function deleteDependency($dependencyId)
     {
-        AnpDependency::find($dependencyId)->delete();
-        $this->loadNetworkData();
-        $this->dispatch('notify', ['message' => 'Dependensi berhasil dihapus.', 'type' => 'success']);
+        if ($this->networkStructure->is_frozen) {
+            $this->dispatch('notify', [
+                'message' => 'Struktur ini sudah di-freeze. Tidak dapat menghapus dependensi.',
+                'type' => 'error'
+            ]);
+            return;
+        }
+
+        $dependency = AnpDependency::find($dependencyId);
+        if ($dependency) {
+            $dependency->delete(); // Soft delete
+            $this->loadNetworkData();
+            $this->dispatch('notify', ['message' => 'Dependensi berhasil dihapus.', 'type' => 'success']);
+        }
     }
 
     public function proceedToCriteriaComparison()
@@ -304,10 +374,31 @@ class NetworkBuilder extends Component
             return;
         }
         
-        $this->analysis->status = 'criteria_comparison_pending';
-        $this->analysis->save();
+        DB::transaction(function() {
+            // Create snapshot before freezing
+            AnpStructureSnapshot::createFromStructure(
+                $this->analysis,
+                $this->networkStructure,
+                'proceed_to_comparison',
+                'Snapshot created when proceeding to criteria comparison'
+            );
+            
+            // Freeze current structure
+            if (!$this->networkStructure->is_frozen) {
+                $this->networkStructure->freeze();
+                
+                Log::info('Network structure frozen', [
+                    'analysis_id' => $this->analysis->id,
+                    'structure_id' => $this->networkStructure->id
+                ]);
+            }
+            
+            // Update analysis status
+            $this->analysis->status = 'criteria_comparison_pending';
+            $this->analysis->save();
+        });
         
-        // Set session untuk langkah berikutnya
+        // Set session for next step
         session()->put('anp_pairwise_context', [
             'control_criterion_context_type' => 'goal',
             'control_criterion_context_id' => null,
@@ -321,9 +412,11 @@ class NetworkBuilder extends Component
         return view('livewire.h-r.anp.network-builder', [
             'dependencies' => $this->networkStructure ? 
                 $this->networkStructure->dependencies()
+                    ->whereNull('deleted_at') // Only show non-deleted
                     ->with(['sourceable', 'targetable'])
                     ->get() : 
                 collect(),
+            'isStructureFrozen' => $this->networkStructure ? $this->networkStructure->is_frozen : false,
         ]);
     }
 }

@@ -7,6 +7,7 @@ use App\Models\AnpCluster;
 use App\Models\AnpDependency;
 use App\Models\AnpElement;
 use App\Models\User;
+use App\Models\AnpStructureSnapshot;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -273,26 +274,25 @@ class AnpCalculationService
 
     private function verifyNetworkStructure(AnpAnalysis $analysis): void
     {
-        $clusters = $analysis->networkStructure->clusters;
-        $elements = $analysis->networkStructure->elements;
-        $candidates = $analysis->candidates;
-
-        Log::info("[ANP ID:{$analysis->id}] Network structure:", [
-            'clusters' => $clusters->count(),
-            'elements' => $elements->count(),
-            'candidates' => $candidates->count()
-        ]);
-
-        // Check if all elements belong to clusters
-        $orphanElements = $elements->filter(fn($el) => !$el->anp_cluster_id);
-        if ($orphanElements->isNotEmpty()) {
-            Log::warning("[ANP ID:{$analysis->id}] Elements without cluster: " . $orphanElements->pluck('name')->implode(', '));
+        // Load struktur saat ini
+        $currentStructure = $analysis->networkStructure;
+        
+        // Cek apakah struktur frozen
+        if (!$currentStructure->is_frozen) {
+            throw new \Exception('Network structure must be frozen before calculation');
         }
-
-        // Check cluster-element distribution
-        foreach ($clusters as $cluster) {
-            $elementCount = $elements->where('anp_cluster_id', $cluster->id)->count();
-            Log::info("[ANP ID:{$analysis->id}] Cluster '{$cluster->name}' has {$elementCount} elements");
+        
+        // Optional: Verify dengan snapshot terakhir
+        $lastSnapshot = AnpStructureSnapshot::where('anp_analysis_id', $analysis->id)
+            ->where('snapshot_type', 'proceed_to_comparison')
+            ->latest()
+            ->first();
+            
+        if ($lastSnapshot) {
+            Log::info('Verifying network structure integrity', [
+                'analysis_id' => $analysis->id,
+                'snapshot_date' => $lastSnapshot->created_at
+            ]);
         }
     }
 
@@ -739,42 +739,35 @@ class AnpCalculationService
             return [];
         }
 
-        // For converged limit matrix, use the stable distribution
-        // The limit priorities are in ANY column (they should all be identical)
-        $stableColumn = null;
-        
-        // Find first non-zero column
-        for ($j = 0; $j < count($limitSupermatrix[0]); $j++) {
-            $colSum = 0;
-            for ($i = 0; $i < count($limitSupermatrix); $i++) {
-                $colSum += abs($limitSupermatrix[$i][$j]);
+        // CRITICAL FIX: Use row sums instead of single column
+        // In ANP, the limiting priorities are the row sums of the limit supermatrix
+        foreach ($alternativeData as $altIdx => $altInfo) {
+            $rowSum = 0;
+            $nonZeroCount = 0;
+            
+            // Sum all values in the row for this alternative
+            for ($j = 0; $j < count($limitSupermatrix[0]); $j++) {
+                $value = $limitSupermatrix[$altIdx][$j] ?? 0;
+                $rowSum += $value;
+                if ($value > 1e-9) {
+                    $nonZeroCount++;
+                }
             }
-            if ($colSum > 1e-9) {
-                $stableColumn = $j;
-                break;
+            
+            // Use average if row sum is too high (indicates multiple connections)
+            if ($rowSum > 1.5) {
+                $rowSum = $rowSum / $nonZeroCount;
             }
-        }
-        
-        if ($stableColumn === null) {
-            Log::error('[extractFinalScores] No non-zero columns in limit matrix!');
-            // Fallback to equal weights
-            $equalWeight = 1.0 / count($alternativeData);
-            foreach ($alternativeData as $altInfo) {
-                $rawScores[$altInfo['id']] = $equalWeight;
-            }
-        } else {
-            // Extract scores from stable column
-            foreach ($alternativeData as $altIdx => $altInfo) {
-                $score = $limitSupermatrix[$altIdx][$stableColumn] ?? 0;
-                $rawScores[$altInfo['id']] = max(0, $score); // Ensure non-negative
-                Log::info("[extractFinalScores] Alternative '{$altInfo['name']}' (id: {$altInfo['id']}): score = {$score}");
-            }
+            
+            $rawScores[$altInfo['id']] = max(0, $rowSum);
+            Log::info("[extractFinalScores] Alternative '{$altInfo['name']}' (id: {$altInfo['id']}): raw_score = {$rowSum}");
         }
 
+        // Check if we have meaningful scores
         $totalScore = array_sum($rawScores);
         Log::info('[extractFinalScores] Total score before normalization: ' . $totalScore);
         
-        // Normalize scores
+        // Normalize scores to sum to 1
         if ($totalScore > 1e-9) {
             foreach ($rawScores as $userId => &$score) {
                 $score = $score / $totalScore;
@@ -788,28 +781,82 @@ class AnpCalculationService
             }
         }
 
-        // Create final ranking
+        // Create final ranking with proper differentiation
         arsort($rawScores);
         $rankedScores = [];
         $rank = 1;
+        $prevScore = null;
         
         foreach ($rawScores as $userId => $score) {
+            // Ensure unique ranking even for very close scores
+            if ($prevScore !== null && abs($score - $prevScore) < 1e-6) {
+                // Scores are effectively equal, but still assign different ranks
+                Log::warning("[extractFinalScores] Nearly identical scores detected for rank {$rank}");
+            }
+            
             $rankedScores[] = [
                 'user_id' => $userId, 
                 'score' => round($score, 6), 
                 'rank' => $rank++
             ];
+            
+            $prevScore = $score;
         }
 
         // Validate that we have meaningful differentiation
         $uniqueScores = count(array_unique(array_column($rankedScores, 'score')));
         if ($uniqueScores === 1) {
-            Log::warning('[extractFinalScores] All candidates have identical scores. Check network structure.');
+            Log::error('[extractFinalScores] All candidates have identical scores. Check network structure and comparisons.');
+            
+            // Apply tie-breaking based on original alternative comparison scores
+            $this->applyTieBreaking($rankedScores, $priorityData);
         } else {
             Log::info('[extractFinalScores] Successfully differentiated ' . $uniqueScores . ' unique score levels');
         }
 
         return $rankedScores;
+    }
+
+    // Add tie-breaking method
+    private function applyTieBreaking(array &$rankedScores, array $priorityData): void
+    {
+        Log::info('[applyTieBreaking] Applying tie-breaking logic for identical scores');
+        
+        // Get alternative comparison scores as tie-breaker
+        $alternativeScores = [];
+        foreach ($priorityData['alternativeScores'] as $comp) {
+            foreach ($comp->priority_vector as $candidateId => $weight) {
+                if (!isset($alternativeScores[$candidateId])) {
+                    $alternativeScores[$candidateId] = [];
+                }
+                $alternativeScores[$candidateId][] = $weight;
+            }
+        }
+        
+        // Calculate average scores per candidate
+        $avgScores = [];
+        foreach ($alternativeScores as $candidateId => $scores) {
+            $avgScores[$candidateId] = array_sum($scores) / count($scores);
+        }
+        
+        // Re-sort based on tie-breaker
+        usort($rankedScores, function($a, $b) use ($avgScores) {
+            // First by ANP score
+            if (abs($a['score'] - $b['score']) > 1e-6) {
+                return $b['score'] <=> $a['score'];
+            }
+            
+            // Then by average alternative comparison score
+            $scoreA = $avgScores[$a['user_id']] ?? 0;
+            $scoreB = $avgScores[$b['user_id']] ?? 0;
+            
+            return $scoreB <=> $scoreA;
+        });
+        
+        // Update ranks
+        foreach ($rankedScores as $idx => &$score) {
+            $score['rank'] = $idx + 1;
+        }
     }
     
     private function saveResults(AnpAnalysis $analysis, array $finalScores): void

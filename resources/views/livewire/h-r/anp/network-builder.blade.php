@@ -7,6 +7,13 @@
         </div>
         <div class="card-body p-3 p-md-4">
             <x-anp-stepper currentStep="2" />
+            @if($isStructureFrozen)
+                <div class="alert alert-warning text-white mb-4">
+                    <i class="material-icons text-sm align-middle">lock</i>
+                    <strong>Struktur Terkunci:</strong> Struktur jaringan ini telah di-freeze karena Anda sudah melanjutkan ke tahap perbandingan. 
+                    Perubahan tidak diperbolehkan untuk menjaga konsistensi data.
+                </div>
+            @endif
 
             <div class="alert alert-info text-white mb-4 shadow-sm">
                 <h6 class="text-white mb-2"><i class="material-icons text-sm align-middle">lightbulb</i> Panduan Pembuatan Jaringan ANP</h6>
@@ -31,7 +38,7 @@
                                         <div class="input-group input-group-outline flex-grow-1">
                                             <input type="text" wire:model.lazy="newClusterName" class="form-control" placeholder="Nama Cluster Baru">
                                         </div>
-                                        <button type="submit" class="btn btn-primary btn-hover-transform mb-0">
+                                        <button type="submit" class="btn btn-primary btn-hover-transform mb-0" {{ $isStructureFrozen ? 'disabled' : '' }}>
                                             <i class="material-icons text-xs me-1">add_circle</i>
                                         </button>
                                     </div>
@@ -86,7 +93,7 @@
                                                 @endforeach
                                             </select>
                                         </div>
-                                        <button type="submit" class="btn btn-primary btn-hover-transform mb-0">
+                                        <button type="submit" class="btn btn-primary btn-hover-transform mb-0" {{ $isStructureFrozen ? 'disabled' : '' }}>
                                             <i class="material-icons text-xs me-1">add_circle</i>
                                         </button>
                                     </div>
@@ -219,7 +226,7 @@
                                     </div>
                                 </div>
                                 <div class="text-end mt-3">
-                                    <button type="submit" class="btn btn-primary btn-hover-transform mb-0">
+                                    <button type="submit" class="btn btn-primary btn-hover-transform mb-0" {{ $isStructureFrozen ? 'disabled' : '' }}>
                                         <i class="material-icons text-xs me-1">add_link</i> Tambah Hubungan
                                     </button>
                                 </div>

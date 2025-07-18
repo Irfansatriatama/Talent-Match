@@ -35,4 +35,14 @@ class AnpElement extends Model
     {
         return $this->hasMany(AnpDependency::class, 'element_id');
     }
+
+    public function sourceDependencies()
+    {
+        return $this->morphMany(AnpDependency::class, 'sourceable');
+    }
+
+    public function targetDependencies()
+    {
+        return $this->morphMany(AnpDependency::class, 'targetable');
+    }
 }
