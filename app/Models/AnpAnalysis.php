@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AnpAnalysis extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -18,7 +19,14 @@ class AnpAnalysis extends Model
         'anp_network_structure_id',
         'hr_user_id',
         'status',
+        'calculation_data',
         'description',
+    ];
+
+    protected $dates = ['deleted_at', 'completed_at']; // Tambahkan deleted_at
+
+    protected $casts = [
+        'calculation_data' => 'array'
     ];
 
     public function jobPosition(): BelongsTo

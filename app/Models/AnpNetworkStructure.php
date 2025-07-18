@@ -15,6 +15,22 @@ class AnpNetworkStructure extends Model
         'description',
     ];
 
+    protected static function booted()
+    {
+        parent::booted();
+
+        static::deleting(function ($networkStructure) {
+            // Soft delete semua cluster
+            $networkStructure->clusters()->delete();
+            
+            // Soft delete semua element
+            $networkStructure->elements()->delete();
+            
+            // Soft delete semua dependency
+            $networkStructure->dependencies()->delete();
+        });
+    }
+
     public function clusters(): HasMany
     {
         return $this->hasMany(AnpCluster::class);

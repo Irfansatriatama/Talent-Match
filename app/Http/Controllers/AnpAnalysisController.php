@@ -67,21 +67,40 @@ class AnpAnalysisController extends Controller
     {
         // Tambahkan eager loading untuk semua relasi yang diperlukan
         $anpAnalysis->load([
-            'jobPosition', 
-            'candidates', 
-            'results.candidate',
-            'networkStructure.clusters.elements',
-            'networkStructure.dependencies.sourceable', 
-            'networkStructure.dependencies.targetable',
-            'criteriaComparisons.controlCriterionable', 
-            'criteriaComparisons.consistency',
-            'interdependencyComparisons.dependency', 
+        'jobPosition', 
+        'candidates', 
+        'results.candidate',
+        
+        'networkStructure.clusters' => function($query) {
+            $query->withTrashed(); // Tampilkan cluster yang sudah dihapus
+        },
+        'networkStructure.clusters.elements' => function($query) {
+            $query->withTrashed(); // Tampilkan element yang sudah dihapus
+        },
+        'networkStructure.dependencies' => function($query) {
+            $query->withTrashed(); // Tampilkan dependency yang sudah dihapus
+        },
+        'networkStructure.dependencies.sourceable' => function($query) {
+            $query->withTrashed();
+        }, 
+        'networkStructure.dependencies.targetable' => function($query) {
+            $query->withTrashed();
+        },
+        'criteriaComparisons.controlCriterionable' => function($query) {
+            // Cek apakah controlCriterionable adalah AnpCluster atau AnpElement
+            $query->withTrashed();
+        }, 
+        'criteriaComparisons.consistency',
+        'interdependencyComparisons.dependency' => function($query) {
+            $query->withTrashed();
+        }, 
         'interdependencyComparisons.consistency',
-        'alternativeComparisons.element', 
+        'alternativeComparisons.element' => function($query) {
+            $query->withTrashed();
+        }, 
         'alternativeComparisons.consistency'
     ]);
     
-    // Tetap menggunakan view yang sudah ada
     return view('livewire.analysis-ranking.show', compact('anpAnalysis'));
 }
 

@@ -491,6 +491,11 @@ progress {
     .display-6 {
       font-size: 2.5rem; } }
 
+.deleted-item {
+    opacity: 0.6;
+    font-style: italic;
+}
+  
 .list-unstyled {
   padding-left: 0;
   list-style: none; }

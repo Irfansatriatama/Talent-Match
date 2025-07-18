@@ -77,10 +77,24 @@ class Setting extends Component
     public function delete($id)
     {
         try {
-            JobPosition::find($id)->delete();
-            session()->flash('message', 'Posisi Jabatan Berhasil Dihapus.');
-        } catch (\Illuminate\Database\QueryException $e) {
-            session()->flash('error', 'Gagal menghapus. Posisi ini mungkin sedang digunakan dalam sebuah analisis.');
+            $jobPosition = JobPosition::find($id);
+            
+            // Cek apakah ada analisis yang sedang aktif
+            $activeAnalyses = $jobPosition->analyses()
+                ->whereIn('status', ['in_progress', 'calculating'])
+                ->exists();
+            
+            if ($activeAnalyses) {
+                session()->flash('error', 'Tidak dapat menghapus posisi yang sedang digunakan dalam analisis aktif.');
+                return;
+            }
+            
+            // Soft delete - data tetap ada di database
+            $jobPosition->delete();
+            
+            session()->flash('message', 'Posisi Jabatan berhasil dihapus.');
+        } catch (\Exception $e) {
+            session()->flash('error', 'Gagal menghapus posisi jabatan: ' . $e->getMessage());
         }
     }
     
