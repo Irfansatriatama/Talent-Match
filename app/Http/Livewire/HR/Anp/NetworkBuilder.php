@@ -103,7 +103,7 @@ class NetworkBuilder extends Component
                 ]);
                 
                 // Force create new structure
-                $this->createIsolatedStructure();
+                $this->networkStructure = $this->createNewIsolatedStructure();
             }
         }
         

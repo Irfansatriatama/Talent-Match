@@ -6,23 +6,26 @@ use App\Models\AnpAnalysis;
 use App\Models\JobPosition;
 use App\Models\User;
 use App\Models\Test;
-use App\Models\AnpNetworkStructure;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 
 class CreateAnalysisForm extends Component
 {
+    // Properties untuk form
     public $name;
     public $description;
     public $job_position_id;
     public $selected_candidates = [];
 
+    // Properties untuk data
     public $jobPositions = [];
     public $availableCandidates = [];
     
+    // UI State
     public $showCandidateList = false;
     
+    // Configuration
     public $debugInfo = '';
     public $totalTests = 3;
 
@@ -41,36 +44,59 @@ class CreateAnalysisForm extends Component
         'selected_candidates.min' => 'Harap pilih setidaknya dua kandidat untuk dibandingkan.',
     ];
 
-    // 1. Update CreateAnalysisForm.php
+    /**
+     * Mount method - called when component is initialized
+     * NO PARAMETERS for CreateAnalysisForm!
+     */
+    public function mount()
+    {
+        // Load job positions saat component dimount
+        $this->jobPositions = JobPosition::orderBy('name', 'asc')->get();
+        
+        // Initialize empty collections
+        $this->availableCandidates = collect();
+        $this->selected_candidates = [];
+        
+        Log::info('CreateAnalysisForm mounted', [
+            'job_positions_count' => $this->jobPositions->count()
+        ]);
+    }
+
+    /**
+     * Save the analysis and redirect to network builder
+     */
     public function saveAnalysis()
     {
         $this->validate();
 
         try {
-            // CRITICAL: Don't use default/shared structure!
-            // Each analysis MUST have its own structure
-            
+            // Create analysis dengan network_structure_id NULL
+            // Network structure akan dibuat di NetworkBuilder component
             $analysis = AnpAnalysis::create([
                 'name' => $this->name,
                 'job_position_id' => $this->job_position_id,
-                'anp_network_structure_id' => null, // Start with NULL
+                'anp_network_structure_id' => null, // CRITICAL: Start with NULL
                 'hr_user_id' => Auth::id(),
                 'status' => 'network_pending', 
                 'description' => $this->description,
             ]);
 
+            // Sync selected candidates
             $analysis->candidates()->sync($this->selected_candidates);
 
+            // Store analysis ID in session untuk digunakan di NetworkBuilder
             session()->put('current_anp_analysis_id', $analysis->id);
 
             Log::info('ANP Analysis created successfully', [
                 'analysis_id' => $analysis->id,
+                'analysis_name' => $analysis->name,
                 'candidates_count' => count($this->selected_candidates),
-                'network_structure_id' => 'Will be created on network definition'
+                'job_position' => $this->jobPositions->find($this->job_position_id)->name ?? 'Unknown'
             ]);
 
-            session()->flash('message', 'Analisis ANP baru berhasil dibuat. Silakan lanjutkan ke definisi jaringan.');
+            session()->flash('message', 'Analisis ANP berhasil dibuat. Silakan definisikan struktur jaringan.');
 
+            // Redirect to network definition page
             return redirect()->route('h-r.anp.analysis.network.define', $analysis->id);
 
         } catch (\Exception $e) {
@@ -79,151 +105,73 @@ class CreateAnalysisForm extends Component
                 'trace' => $e->getTraceAsString()
             ]);
             
-            session()->flash('error', 'Gagal membuat analisis ANP: ' . $e->getMessage());
+            session()->flash('error', 'Gagal membuat analisis: ' . $e->getMessage());
         }
-    }
-
-    // 2. Update NetworkBuilder mount() method
-    public function mount(AnpAnalysis $anpAnalysis = null)
-    {
-        if ($anpAnalysis) {
-            $this->analysis = $anpAnalysis;
-            session()->put('current_anp_analysis_id', $anpAnalysis->id);
-        } else {
-            $analysisId = session('current_anp_analysis_id');
-            if (!$analysisId) {
-                return redirect()->route('h-r.anp.analysis.index');
-            }
-            $this->analysis = AnpAnalysis::findOrFail($analysisId);
-        }
-        
-        $this->initializeNetworkStructure();
-        $this->loadNetworkData();
-    }
-
-    // 3. Fix initializeNetworkStructure() to properly handle new analysis
-    private function initializeNetworkStructure()
-    {
-        $this->resetFormFields();
-        
-        if (!$this->analysis->anp_network_structure_id) {
-            // Create NEW unique structure for this analysis
-            $this->networkStructure = AnpNetworkStructure::create([
-                'name' => 'Network untuk ' . $this->analysis->name . ' (ID: ' . $this->analysis->id . ')',
-                'description' => 'Struktur jaringan unik untuk analisis ' . $this->analysis->name,
-                'is_frozen' => false,
-                'version' => 1
-            ]);
-            
-            $this->analysis->anp_network_structure_id = $this->networkStructure->id;
-            $this->analysis->save();
-            
-            // Copy template structure if exists
-            $this->copyTemplateStructure();
-            
-            Log::info('Created new network structure', [
-                'analysis_id' => $this->analysis->id,
-                'structure_id' => $this->networkStructure->id
-            ]);
-        } else {
-            // Load existing structure
-            $this->networkStructure = AnpNetworkStructure::find($this->analysis->anp_network_structure_id);
-            
-            // CRITICAL: Check if this is a reused structure from another analysis
-            $otherAnalysesCount = AnpAnalysis::where('anp_network_structure_id', $this->networkStructure->id)
-                ->where('id', '!=', $this->analysis->id)
-                ->count();
-                
-            if ($otherAnalysesCount > 0) {
-                Log::warning('Network structure is shared with other analyses!', [
-                    'structure_id' => $this->networkStructure->id,
-                    'other_analyses_count' => $otherAnalysesCount
-                ]);
-                
-                // Force create new structure
-                $this->createNewStructureForAnalysis();
-            }
-        }
-    }
-
-    // 4. Add method to force new structure creation
-    private function createNewStructureForAnalysis()
-    {
-        $oldStructure = $this->networkStructure;
-        
-        // Create new structure
-        $this->networkStructure = AnpNetworkStructure::create([
-            'name' => 'Network untuk ' . $this->analysis->name . ' (ID: ' . $this->analysis->id . ')',
-            'description' => 'Struktur jaringan unik untuk analisis ' . $this->analysis->name,
-            'is_frozen' => false,
-            'version' => 1,
-            'parent_structure_id' => $oldStructure->id
-        ]);
-        
-        // Update analysis
-        $this->analysis->anp_network_structure_id = $this->networkStructure->id;
-        $this->analysis->save();
-        
-        // Copy existing data if needed
-        if ($oldStructure && !$oldStructure->is_frozen) {
-            $this->copyStructureData($oldStructure, $this->networkStructure);
-        }
-        
-        Log::info('Created new structure to replace shared structure', [
-            'analysis_id' => $this->analysis->id,
-            'old_structure_id' => $oldStructure->id,
-            'new_structure_id' => $this->networkStructure->id
-        ]);
     }
     
+    /**
+     * Handle job position selection change
+     */
     public function updatedJobPositionId($value)
     {
-        Log::info('Job position updated', ['value' => $value]);
+        Log::info('Job position selection changed', ['job_position_id' => $value]);
         
         if ($value) {
+            // Reset selections
             $this->availableCandidates = collect();
             $this->selected_candidates = [];
             $this->debugInfo = '';
             
-            // Menggunakan config untuk test ID dan minimum score
+            // Get config values for filtering
             $programmingTestId = config('tests.types.programming.id', 1);
             $minimumScore = config('tests.types.programming.minimum_passing_score', 80);
             
-            // Query dengan filter tambahan untuk skor programming
-            $completedCandidatesQuery = User::where('role', User::ROLE_CANDIDATE)
+            // Query candidates yang eligible
+            $candidates = User::where('role', User::ROLE_CANDIDATE)
                 ->where('job_position_id', $value)
                 ->with(['testProgress' => function($query) {
                     $query->where('status', 'completed');
                 }])
                 ->whereHas('testProgress', function($query) use ($programmingTestId, $minimumScore) {
-                    // Filter untuk tes programming dengan skor minimal dari config
                     $query->where('test_id', $programmingTestId)
                         ->where('status', 'completed')
                         ->where('score', '>=', $minimumScore);
                 })
-                ->get()
-                ->filter(function ($user) {
-                    $completedTestsCount = $user->testProgress
-                        ->where('status', 'completed')
-                        ->pluck('test_id')
-                        ->unique()
-                        ->count();
-                    
-                    Log::info('Checking candidate', [
-                        'user_id' => $user->id,
-                        'name' => $user->name,
-                        'completed_tests' => $completedTestsCount,
-                        'required_tests' => $this->totalTests,
-                        'programming_score' => $user->testProgress->where('test_id', config('tests.types.programming.id', 1))->first()->score ?? 'N/A'
-                    ]);
-                    
-                    return $completedTestsCount >= $this->totalTests;
-                });
+                ->get();
             
-            $this->availableCandidates = $completedCandidatesQuery;
+            // Filter candidates yang sudah selesai semua test
+            $this->availableCandidates = $candidates->filter(function ($user) use ($programmingTestId) {
+                $completedTestsCount = $user->testProgress
+                    ->where('status', 'completed')
+                    ->pluck('test_id')
+                    ->unique()
+                    ->count();
+                
+                $programmingScore = $user->testProgress
+                    ->where('test_id', $programmingTestId)
+                    ->first()
+                    ->score ?? 0;
+                
+                Log::debug('Evaluating candidate', [
+                    'user_id' => $user->id,
+                    'name' => $user->name,
+                    'completed_tests' => $completedTestsCount,
+                    'required_tests' => $this->totalTests,
+                    'programming_score' => $programmingScore
+                ]);
+                
+                return $completedTestsCount >= $this->totalTests;
+            });
+            
             $this->showCandidateList = true;
             
+            Log::info('Candidates loaded for position', [
+                'position_id' => $value,
+                'eligible_candidates' => $this->availableCandidates->count()
+            ]);
+            
         } else {
+            // Reset jika tidak ada position dipilih
             $this->showCandidateList = false;
             $this->availableCandidates = collect();
             $this->selected_candidates = [];
@@ -231,19 +179,42 @@ class CreateAnalysisForm extends Component
         }
     }
 
-    // 5. Update the view to show freeze state clearly
+    /**
+     * Toggle all candidates selection
+     */
+    public function toggleAllCandidates()
+    {
+        if (count($this->selected_candidates) === $this->availableCandidates->count()) {
+            $this->selected_candidates = [];
+        } else {
+            $this->selected_candidates = $this->availableCandidates->pluck('id')->toArray();
+        }
+    }
+
+    /**
+     * Get selected candidates count for UI
+     */
+    public function getSelectedCountProperty()
+    {
+        return count($this->selected_candidates);
+    }
+
+    /**
+     * Check if form is valid
+     */
+    public function getCanSubmitProperty()
+    {
+        return !empty($this->name) && 
+               !empty($this->job_position_id) && 
+               count($this->selected_candidates) >= 2;
+    }
+
+    /**
+     * Render the component view
+     * CRITICAL: Must return the correct view!
+     */
     public function render()
     {
-        return view('livewire.h-r.anp.network-builder', [
-            'dependencies' => $this->networkStructure ? 
-                $this->networkStructure->dependencies()
-                    ->whereNull('deleted_at')
-                    ->with(['sourceable', 'targetable'])
-                    ->get() : 
-                collect(),
-            'isStructureFrozen' => $this->networkStructure ? $this->networkStructure->is_frozen : false,
-            'analysisName' => $this->analysis->name,
-            'structureId' => $this->networkStructure ? $this->networkStructure->id : null,
-        ]);
+        return view('livewire.h-r.anp.create-analysis-form');
     }
 }
