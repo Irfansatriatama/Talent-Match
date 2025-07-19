@@ -80,6 +80,33 @@ class AnpAnalysis extends Model
         return $this->hasMany(AnpResult::class);
     }
 
+    public function ensureUniqueNetworkStructure()
+    {
+        if (!$this->anp_network_structure_id) {
+            return false;
+        }
+        
+        // Check if structure is truly unique
+        $sharedCount = self::where('anp_network_structure_id', $this->anp_network_structure_id)
+            ->where('id', '!=', $this->id)
+            ->count();
+            
+        return $sharedCount === 0;
+    }
+
+    public function validateNetworkStructure()
+    {
+        if (!$this->anp_network_structure_id) {
+            throw new \Exception('Analysis does not have network structure');
+        }
+        
+        if (!$this->ensureUniqueNetworkStructure()) {
+            throw new \Exception('Analysis is using shared network structure');
+        }
+        
+        return true;
+    }
+
     /**
      * Memeriksa apakah semua perbandingan yang diperlukan untuk analisis ini
      * telah selesai dibuat dan memiliki rasio konsistensi yang valid.

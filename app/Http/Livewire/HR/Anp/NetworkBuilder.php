@@ -56,60 +56,46 @@ class NetworkBuilder extends Component
     {
         $this->resetFormFields();
         
-        if (!$this->analysis->anp_network_structure_id) {
-            // ALWAYS create NEW unique structure for each analysis
+        // ALWAYS check if analysis already has a network structure
+        if ($this->analysis->anp_network_structure_id) {
+            // Load existing structure
+            $this->networkStructure = AnpNetworkStructure::find($this->analysis->anp_network_structure_id);
+            
+            // Validate it's truly unique to this analysis
+            if ($this->networkStructure && $this->networkStructure->original_analysis_id != $this->analysis->id) {
+                // Structure is shared! Create a new one
+                $this->createUniqueNetworkStructure();
+            }
+        } else {
+            // No structure yet, create new one
+            $this->createUniqueNetworkStructure();
+        }
+    }
+
+    private function createUniqueNetworkStructure()
+    {
+        DB::transaction(function() {
             $this->networkStructure = AnpNetworkStructure::create([
                 'name' => 'Network untuk ' . $this->analysis->name . ' (Analisis #' . $this->analysis->id . ')',
                 'description' => 'Struktur jaringan eksklusif untuk analisis: ' . $this->analysis->name,
                 'is_frozen' => false,
                 'version' => 1,
-                'original_analysis_id' => $this->analysis->id, // Track ownership
+                'original_analysis_id' => $this->analysis->id, // IMPORTANT: Track ownership
                 'is_template' => false
             ]);
             
-            $this->analysis->anp_network_structure_id = $this->networkStructure->id;
-            $this->analysis->save();
+            // Update analysis to use this structure
+            $this->analysis->update([
+                'anp_network_structure_id' => $this->networkStructure->id
+            ]);
             
             Log::info('Created unique network structure', [
                 'analysis_id' => $this->analysis->id,
-                'analysis_name' => $this->analysis->name,
-                'structure_id' => $this->networkStructure->id,
-                'structure_name' => $this->networkStructure->name
+                'structure_id' => $this->networkStructure->id
             ]);
-            
-            // OPTIONAL: Copy from template if needed
-            if (request()->has('use_template') && request('use_template') == 'true') {
-                $this->copyFromTemplate();
-            }
-            
-        } else {
-            $this->networkStructure = AnpNetworkStructure::find($this->analysis->anp_network_structure_id);
-            
-            // CRITICAL SECURITY CHECK
-            if (!$this->networkStructure) {
-                throw new \Exception('Network structure not found');
-            }
-            
-            // Verify ownership
-            $usageCount = AnpAnalysis::where('anp_network_structure_id', $this->networkStructure->id)
-                ->where('id', '!=', $this->analysis->id)
-                ->count();
-                
-            if ($usageCount > 0) {
-                Log::warning('CRITICAL: Network structure is shared!', [
-                    'structure_id' => $this->networkStructure->id,
-                    'analysis_id' => $this->analysis->id,
-                    'other_analyses_using' => $usageCount
-                ]);
-                
-                // Force create new structure
-                $this->networkStructure = $this->createNewIsolatedStructure();
-            }
-        }
-        
-        // Verify isolation
-        $this->verifyNetworkIsolation();
+        });
     }
+
 
     private function createNewIsolatedStructure()
     {

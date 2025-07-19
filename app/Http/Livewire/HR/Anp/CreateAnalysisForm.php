@@ -179,6 +179,32 @@ class CreateAnalysisForm extends Component
         }
     }
 
+    public function submit()
+    {
+        $this->validate();
+        
+        DB::transaction(function() {
+            // Create analysis
+            $analysis = AnpAnalysis::create([
+                'name' => $this->goalName,
+                'job_position_id' => $this->selectedJobPosition,
+                'hr_user_id' => auth()->id(),
+                'status' => 'network_pending', // IMPORTANT: Set correct initial status
+                'description' => $this->description,
+                // DO NOT set anp_network_structure_id here
+            ]);
+            
+            // Attach candidates
+            $analysis->candidates()->attach($this->selectedCandidates);
+            
+            // Store in session for NetworkBuilder
+            session()->put('current_anp_analysis_id', $analysis->id);
+            
+            // Redirect to network builder
+            return redirect()->route('h-r.anp.analysis.network-builder');
+        });
+    }
+
     /**
      * Toggle all candidates selection
      */
