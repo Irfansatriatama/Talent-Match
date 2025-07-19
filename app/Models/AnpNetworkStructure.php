@@ -15,9 +15,9 @@ class AnpNetworkStructure extends Model
         'name',
         'description',
         'is_frozen',
-        'parent_structure_id',
         'version',
-        'frozen_at'
+        'original_analysis_id',
+        'is_template'
     ];
 
     protected $casts = [
@@ -29,8 +29,17 @@ class AnpNetworkStructure extends Model
     {
         parent::booted();
 
+        // Merge both boot logic here
+        static::creating(function ($structure) {
+            // Log all structure creations
+            Log::info('Creating network structure', [
+                'name' => $structure->name,
+                'for_analysis' => $structure->original_analysis_id
+            ]);
+        });
+
         static::deleting(function ($networkStructure) {
-            // Cek apakah struktur ini frozen
+            // Existing delete logic
             if ($networkStructure->is_frozen) {
                 throw new \Exception('Cannot delete frozen network structure');
             }
@@ -129,6 +138,18 @@ class AnpNetworkStructure extends Model
         }
 
         return $snapshot;
+    }
+    
+    // Add scope for finding structures by analysis
+    public function scopeForAnalysis($query, $analysisId)
+    {
+        return $query->where('original_analysis_id', $analysisId);
+    }
+    
+    // Check if structure is properly isolated
+    public function isProperlyIsolated()
+    {
+        return AnpAnalysis::where('anp_network_structure_id', $this->id)->count() <= 1;
     }
 
     // Existing relationships...

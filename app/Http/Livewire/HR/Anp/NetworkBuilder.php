@@ -57,104 +57,175 @@ class NetworkBuilder extends Component
         $this->resetFormFields();
         
         if (!$this->analysis->anp_network_structure_id) {
-            // Create NEW unique structure for this analysis
+            // ALWAYS create NEW unique structure for each analysis
             $this->networkStructure = AnpNetworkStructure::create([
-                'name' => 'Network untuk ' . $this->analysis->name . ' (ID: ' . $this->analysis->id . ')',
-                'description' => 'Struktur jaringan unik untuk analisis ' . $this->analysis->name,
+                'name' => 'Network untuk ' . $this->analysis->name . ' (Analisis #' . $this->analysis->id . ')',
+                'description' => 'Struktur jaringan eksklusif untuk analisis: ' . $this->analysis->name,
                 'is_frozen' => false,
-                'version' => 1
+                'version' => 1,
+                'original_analysis_id' => $this->analysis->id, // Track ownership
+                'is_template' => false
             ]);
             
             $this->analysis->anp_network_structure_id = $this->networkStructure->id;
             $this->analysis->save();
             
-            // Copy template structure if exists
-            $this->copyTemplateStructure();
-            
-            Log::info('Created new network structure', [
+            Log::info('Created unique network structure', [
                 'analysis_id' => $this->analysis->id,
-                'structure_id' => $this->networkStructure->id
+                'analysis_name' => $this->analysis->name,
+                'structure_id' => $this->networkStructure->id,
+                'structure_name' => $this->networkStructure->name
             ]);
+            
+            // OPTIONAL: Copy from template if needed
+            if (request()->has('use_template') && request('use_template') == 'true') {
+                $this->copyFromTemplate();
+            }
+            
         } else {
-            // Load existing structure
             $this->networkStructure = AnpNetworkStructure::find($this->analysis->anp_network_structure_id);
             
-            // Check if structure is frozen
-            if ($this->networkStructure->is_frozen) {
-                // If frozen, we need to work on a new version
-                $this->dispatch('notify', [
-                    'message' => 'Struktur ini telah di-freeze. Bekerja pada versi baru.',
-                    'type' => 'info'
-                ]);
+            // CRITICAL SECURITY CHECK
+            if (!$this->networkStructure) {
+                throw new \Exception('Network structure not found');
             }
-        }
-    }
-
-    private function copyTemplateStructure()
-    {
-        $templateStructure = AnpNetworkStructure::where('name', 'LIKE', '%Template%')
-            ->orWhere('name', 'LIKE', '%Default Template%')
-            ->first();
             
-        if (!$templateStructure) {
-            Log::info('No template structure found');
-            return;
+            // Verify ownership
+            $usageCount = AnpAnalysis::where('anp_network_structure_id', $this->networkStructure->id)
+                ->where('id', '!=', $this->analysis->id)
+                ->count();
+                
+            if ($usageCount > 0) {
+                Log::warning('CRITICAL: Network structure is shared!', [
+                    'structure_id' => $this->networkStructure->id,
+                    'analysis_id' => $this->analysis->id,
+                    'other_analyses_using' => $usageCount
+                ]);
+                
+                // Force create new structure
+                $this->createIsolatedStructure();
+            }
         }
         
-        DB::transaction(function() use ($templateStructure) {
-            // Copy clusters with NEW IDs
-            $clusterMapping = [];
-            foreach ($templateStructure->clusters as $oldCluster) {
+        // Verify isolation
+        $this->verifyNetworkIsolation();
+    }
+
+    private function createIsolatedStructure()
+    {
+        $oldStructure = $this->networkStructure;
+        
+        // Create new isolated structure
+        $this->networkStructure = AnpNetworkStructure::create([
+            'name' => 'Network untuk ' . $this->analysis->name . ' (Isolated)',
+            'description' => 'Isolated structure - previously shared with other analyses',
+            'is_frozen' => false,
+            'version' => 1,
+            'original_analysis_id' => $this->analysis->id,
+            'is_template' => false
+        ]);
+        
+        // Deep copy all components
+        DB::transaction(function () use ($oldStructure) {
+            // Copy clusters
+            $clusterMap = [];
+            foreach ($oldStructure->clusters as $cluster) {
                 $newCluster = $this->networkStructure->clusters()->create([
-                    'name' => $oldCluster->name,
-                    'description' => $oldCluster->description,
+                    'name' => $cluster->name,
+                    'description' => $cluster->description
                 ]);
-                $clusterMapping[$oldCluster->id] = $newCluster->id;
+                $clusterMap[$cluster->id] = $newCluster->id;
             }
             
-            // Copy elements with NEW IDs
-            $elementMapping = [];
-            foreach ($templateStructure->elements as $oldElement) {
+            // Copy elements
+            $elementMap = [];
+            foreach ($oldStructure->elements as $element) {
                 $newElement = $this->networkStructure->elements()->create([
-                    'name' => $oldElement->name,
-                    'description' => $oldElement->description,
-                    'anp_cluster_id' => isset($clusterMapping[$oldElement->anp_cluster_id]) 
-                        ? $clusterMapping[$oldElement->anp_cluster_id] 
-                        : null,
+                    'anp_cluster_id' => isset($clusterMap[$element->anp_cluster_id]) ? 
+                        $clusterMap[$element->anp_cluster_id] : null,
+                    'name' => $element->name,
+                    'description' => $element->description
                 ]);
-                $elementMapping[$oldElement->id] = $newElement->id;
+                $elementMap[$element->id] = $newElement->id;
             }
             
-            // Copy dependencies with NEW IDs
-            foreach ($templateStructure->dependencies as $oldDep) {
-                $sourceId = null;
-                $targetId = null;
-                
-                if ($oldDep->sourceable_type == AnpCluster::class) {
-                    $sourceId = $clusterMapping[$oldDep->sourceable_id] ?? null;
-                } else {
-                    $sourceId = $elementMapping[$oldDep->sourceable_id] ?? null;
-                }
-                
-                if ($oldDep->targetable_type == AnpCluster::class) {
-                    $targetId = $clusterMapping[$oldDep->targetable_id] ?? null;
-                } else {
-                    $targetId = $elementMapping[$oldDep->targetable_id] ?? null;
-                }
-                
+            // Copy dependencies
+            foreach ($oldStructure->dependencies as $dep) {
+                $sourceId = $dep->sourceable_type == AnpCluster::class ? 
+                    ($clusterMap[$dep->sourceable_id] ?? null) : 
+                    ($elementMap[$dep->sourceable_id] ?? null);
+                    
+                $targetId = $dep->targetable_type == AnpCluster::class ? 
+                    ($clusterMap[$dep->targetable_id] ?? null) : 
+                    ($elementMap[$dep->targetable_id] ?? null);
+                    
                 if ($sourceId && $targetId) {
                     $this->networkStructure->dependencies()->create([
-                        'sourceable_type' => $oldDep->sourceable_type,
+                        'sourceable_type' => $dep->sourceable_type,
                         'sourceable_id' => $sourceId,
-                        'targetable_type' => $oldDep->targetable_type,
+                        'targetable_type' => $dep->targetable_type,
                         'targetable_id' => $targetId,
-                        'description' => $oldDep->description,
+                        'description' => $dep->description
                     ]);
                 }
             }
         });
         
-        Log::info('Template structure copied successfully');
+        // Update analysis
+        $this->analysis->anp_network_structure_id = $this->networkStructure->id;
+        $this->analysis->save();
+        
+        Log::info('Created isolated structure from shared one', [
+            'analysis_id' => $this->analysis->id,
+            'old_structure_id' => $oldStructure->id,
+            'new_structure_id' => $this->networkStructure->id
+        ]);
+    }
+
+    private function verifyNetworkIsolation()
+    {
+        $shareCount = AnpAnalysis::where('anp_network_structure_id', $this->networkStructure->id)
+            ->count();
+            
+        if ($shareCount > 1) {
+            throw new \Exception("Network isolation failed! Structure #{$this->networkStructure->id} is used by {$shareCount} analyses");
+        }
+    }
+
+    // Update atau comment out copyTemplateStructure
+    private function copyFromTemplate()
+    {
+        $template = AnpNetworkStructure::where('is_template', true)
+            ->orderBy('created_at', 'desc')
+            ->first();
+            
+        if (!$template) {
+            Log::info('No template found to copy from');
+            return;
+        }
+        
+        // Copy CONTENT not structure reference
+        DB::transaction(function () use ($template) {
+            foreach ($template->clusters as $cluster) {
+                $newCluster = $this->networkStructure->clusters()->create([
+                    'name' => $cluster->name,
+                    'description' => $cluster->description
+                ]);
+                
+                foreach ($cluster->elements as $element) {
+                    $newCluster->elements()->create([
+                        'anp_network_structure_id' => $this->networkStructure->id,
+                        'name' => $element->name,
+                        'description' => $element->description
+                    ]);
+                }
+            }
+        });
+        
+        Log::info('Copied content from template', [
+            'template_id' => $template->id,
+            'to_structure_id' => $this->networkStructure->id
+        ]);
     }
 
     private function resetFormFields()
