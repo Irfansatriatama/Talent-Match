@@ -111,14 +111,14 @@ class NetworkBuilder extends Component
         $this->verifyNetworkIsolation();
     }
 
-    private function createIsolatedStructure()
+    private function createNewIsolatedStructure()
     {
         $oldStructure = $this->networkStructure;
         
         // Create new isolated structure
-        $this->networkStructure = AnpNetworkStructure::create([
-            'name' => 'Network untuk ' . $this->analysis->name . ' (Isolated)',
-            'description' => 'Isolated structure - previously shared with other analyses',
+        $newStructure = AnpNetworkStructure::create([
+            'name' => 'Network untuk ' . $this->analysis->name . ' (Isolated Copy)',
+            'description' => 'Isolated structure - previously shared with other analyses. Original: ' . $oldStructure->name,
             'is_frozen' => false,
             'version' => 1,
             'original_analysis_id' => $this->analysis->id,
@@ -126,11 +126,11 @@ class NetworkBuilder extends Component
         ]);
         
         // Deep copy all components
-        DB::transaction(function () use ($oldStructure) {
+        DB::transaction(function () use ($oldStructure, $newStructure) {
             // Copy clusters
             $clusterMap = [];
             foreach ($oldStructure->clusters as $cluster) {
-                $newCluster = $this->networkStructure->clusters()->create([
+                $newCluster = $newStructure->clusters()->create([
                     'name' => $cluster->name,
                     'description' => $cluster->description
                 ]);
@@ -140,7 +140,7 @@ class NetworkBuilder extends Component
             // Copy elements
             $elementMap = [];
             foreach ($oldStructure->elements as $element) {
-                $newElement = $this->networkStructure->elements()->create([
+                $newElement = $newStructure->elements()->create([
                     'anp_cluster_id' => isset($clusterMap[$element->anp_cluster_id]) ? 
                         $clusterMap[$element->anp_cluster_id] : null,
                     'name' => $element->name,
@@ -160,7 +160,7 @@ class NetworkBuilder extends Component
                     ($elementMap[$dep->targetable_id] ?? null);
                     
                 if ($sourceId && $targetId) {
-                    $this->networkStructure->dependencies()->create([
+                    $newStructure->dependencies()->create([
                         'sourceable_type' => $dep->sourceable_type,
                         'sourceable_id' => $sourceId,
                         'targetable_type' => $dep->targetable_type,
@@ -171,24 +171,39 @@ class NetworkBuilder extends Component
             }
         });
         
-        // Update analysis
-        $this->analysis->anp_network_structure_id = $this->networkStructure->id;
+        // Update analysis to use new structure
+        $this->analysis->anp_network_structure_id = $newStructure->id;
         $this->analysis->save();
         
-        Log::info('Created isolated structure from shared one', [
+        Log::info('Created new isolated structure from shared', [
             'analysis_id' => $this->analysis->id,
             'old_structure_id' => $oldStructure->id,
-            'new_structure_id' => $this->networkStructure->id
+            'new_structure_id' => $newStructure->id
         ]);
+        
+        return $newStructure;
     }
 
+    // Add verification method
     private function verifyNetworkIsolation()
     {
-        $shareCount = AnpAnalysis::where('anp_network_structure_id', $this->networkStructure->id)
+        if (!$this->networkStructure) {
+            return;
+        }
+        
+        $sharedCount = AnpAnalysis::where('anp_network_structure_id', $this->networkStructure->id)
+            ->where('id', '!=', $this->analysis->id)
             ->count();
             
-        if ($shareCount > 1) {
-            throw new \Exception("Network isolation failed! Structure #{$this->networkStructure->id} is used by {$shareCount} analyses");
+        if ($sharedCount > 0) {
+            Log::error('CRITICAL: Network structure isolation violated!', [
+                'structure_id' => $this->networkStructure->id,
+                'analysis_id' => $this->analysis->id,
+                'shared_with' => $sharedCount . ' other analyses'
+            ]);
+            
+            // Auto-fix by creating isolated structure
+            $this->networkStructure = $this->createNewIsolatedStructure();
         }
     }
 

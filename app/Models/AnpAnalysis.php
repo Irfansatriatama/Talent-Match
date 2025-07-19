@@ -39,6 +39,16 @@ class AnpAnalysis extends Model
         return $this->belongsTo(AnpNetworkStructure::class, 'anp_network_structure_id');
     }
 
+    public function hasNetworkStructure(): bool
+    {
+        return !is_null($this->anp_network_structure_id);
+    }
+
+    public function isNetworkPending(): bool
+    {
+        return $this->status === 'network_pending' && !$this->hasNetworkStructure();
+    }
+
     public function hrUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'hr_user_id');
