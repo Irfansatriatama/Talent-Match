@@ -253,16 +253,14 @@ class AssessmentMbti extends Component
                 $timeSpentSeconds = min($timeSpentSeconds, $this->timeLimitMinutes * 60);
             }
 
-            // UPDATED: Tidak lagi menyimpan result_summary untuk MBTI
             $this->progress->update([
                 'status' => 'completed', 
-                'score' => null, // MBTI tidak memiliki skor numerik tunggal
-                'result_summary' => null, // UPDATED: Set null, data disimpan di tabel terpisah
+                'score' => null, 
+                'result_summary' => null,
                 'completed_at' => now(), 
                 'time_spent_seconds' => $timeSpentSeconds
             ]);
             
-            // EXISTING: Simpan skor detail MBTI (sudah ada di kode asli)
             $scoringService->saveMbtiDetailedScores($user, $scoreResult);
             
             $session = TestSession::where('user_id', $user->id)

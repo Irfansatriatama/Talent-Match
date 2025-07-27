@@ -32,7 +32,6 @@ class AnpStructureSnapshot extends Model
         return $this->belongsTo(AnpNetworkStructure::class, 'anp_network_structure_id');
     }
 
-    // Helper method untuk save snapshot
     public static function createFromStructure(AnpAnalysis $analysis, AnpNetworkStructure $structure, $type = 'manual', $notes = null)
     {
         $snapshotData = [

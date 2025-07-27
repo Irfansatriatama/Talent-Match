@@ -89,14 +89,11 @@
                             <tbody>
                             @forelse ($candidates as $candidate)
                                 @php
-                                    // UPDATED: Ambil data dari sumber yang benar
                                     $progTest = $candidate->testProgress->where('test_id', 1)->first();
                                     
-                                    // NEW: Ambil dari tabel terpisah
                                     $riasecScore = $candidate->latestRiasecScore;
                                     $mbtiScore = $candidate->latestMbtiScore;
                                     
-                                    // Hitung completion percentage dengan metode yang sudah diupdate
                                     $completionPercentage = $candidate->getTestCompletionPercentage();
                                 @endphp
                                 <tr>

@@ -56,18 +56,13 @@ class NetworkBuilder extends Component
     {
         $this->resetFormFields();
         
-        // ALWAYS check if analysis already has a network structure
         if ($this->analysis->anp_network_structure_id) {
-            // Load existing structure
             $this->networkStructure = AnpNetworkStructure::find($this->analysis->anp_network_structure_id);
             
-            // Validate it's truly unique to this analysis
             if ($this->networkStructure && $this->networkStructure->original_analysis_id != $this->analysis->id) {
-                // Structure is shared! Create a new one
                 $this->createUniqueNetworkStructure();
             }
         } else {
-            // No structure yet, create new one
             $this->createUniqueNetworkStructure();
         }
     }
@@ -80,11 +75,10 @@ class NetworkBuilder extends Component
                 'description' => 'Struktur jaringan eksklusif untuk analisis: ' . $this->analysis->name,
                 'is_frozen' => false,
                 'version' => 1,
-                'original_analysis_id' => $this->analysis->id, // IMPORTANT: Track ownership
+                'original_analysis_id' => $this->analysis->id, 
                 'is_template' => false
             ]);
             
-            // Update analysis to use this structure
             $this->analysis->update([
                 'anp_network_structure_id' => $this->networkStructure->id
             ]);
@@ -101,7 +95,6 @@ class NetworkBuilder extends Component
     {
         $oldStructure = $this->networkStructure;
         
-        // Create new isolated structure
         $newStructure = AnpNetworkStructure::create([
             'name' => 'Network untuk ' . $this->analysis->name . ' (Isolated Copy)',
             'description' => 'Isolated structure - previously shared with other analyses. Original: ' . $oldStructure->name,
@@ -110,10 +103,8 @@ class NetworkBuilder extends Component
             'original_analysis_id' => $this->analysis->id,
             'is_template' => false
         ]);
-        
-        // Deep copy all components
+
         DB::transaction(function () use ($oldStructure, $newStructure) {
-            // Copy clusters
             $clusterMap = [];
             foreach ($oldStructure->clusters as $cluster) {
                 $newCluster = $newStructure->clusters()->create([
@@ -123,7 +114,6 @@ class NetworkBuilder extends Component
                 $clusterMap[$cluster->id] = $newCluster->id;
             }
             
-            // Copy elements
             $elementMap = [];
             foreach ($oldStructure->elements as $element) {
                 $newElement = $newStructure->elements()->create([
@@ -135,7 +125,6 @@ class NetworkBuilder extends Component
                 $elementMap[$element->id] = $newElement->id;
             }
             
-            // Copy dependencies
             foreach ($oldStructure->dependencies as $dep) {
                 $sourceId = $dep->sourceable_type == AnpCluster::class ? 
                     ($clusterMap[$dep->sourceable_id] ?? null) : 
@@ -157,7 +146,6 @@ class NetworkBuilder extends Component
             }
         });
         
-        // Update analysis to use new structure
         $this->analysis->anp_network_structure_id = $newStructure->id;
         $this->analysis->save();
         
@@ -170,7 +158,6 @@ class NetworkBuilder extends Component
         return $newStructure;
     }
 
-    // Add verification method
     private function verifyNetworkIsolation()
     {
         if (!$this->networkStructure) {
@@ -188,12 +175,9 @@ class NetworkBuilder extends Component
                 'shared_with' => $sharedCount . ' other analyses'
             ]);
             
-            // Auto-fix by creating isolated structure
             $this->networkStructure = $this->createNewIsolatedStructure();
         }
     }
-
-    // Update atau comment out copyTemplateStructure
     private function copyFromTemplate()
     {
         $template = AnpNetworkStructure::where('is_template', true)
@@ -205,7 +189,6 @@ class NetworkBuilder extends Component
             return;
         }
         
-        // Copy CONTENT not structure reference
         DB::transaction(function () use ($template) {
             foreach ($template->clusters as $cluster) {
                 $newCluster = $this->networkStructure->clusters()->create([
@@ -246,7 +229,6 @@ class NetworkBuilder extends Component
     public function loadNetworkData()
     {
         if ($this->networkStructure) {
-            // Only load NON-deleted data
             $this->allElements = $this->networkStructure->elements()
                 ->whereNull('deleted_at')
                 ->orderBy('name')
@@ -305,16 +287,14 @@ class NetworkBuilder extends Component
         
         if ($element) {
             DB::transaction(function() use ($element) {
-                // Soft delete dependencies using model relationships
                 $element->sourceDependencies()->each(function($dep) {
-                    $dep->delete(); // This triggers soft delete
+                    $dep->delete(); 
                 });
                 
                 $element->targetDependencies()->each(function($dep) {
-                    $dep->delete(); // This triggers soft delete
+                    $dep->delete(); 
                 });
                 
-                // Soft delete element
                 $element->delete();
             });
             
@@ -363,7 +343,6 @@ class NetworkBuilder extends Component
         
         if ($cluster) {
             DB::transaction(function() use ($cluster) {
-                // Use model's soft delete which will cascade
                 $cluster->delete();
             });
             
@@ -397,7 +376,7 @@ class NetworkBuilder extends Component
             ->where('sourceable_id', $this->sourceId)
             ->where('targetable_type', $this->targetType == 'element' ? AnpElement::class : AnpCluster::class)
             ->where('targetable_id', $this->targetId)
-            ->whereNull('deleted_at') // Check for soft deletes
+            ->whereNull('deleted_at') 
             ->exists();
 
         if ($exists) {
@@ -433,7 +412,7 @@ class NetworkBuilder extends Component
 
         $dependency = AnpDependency::find($dependencyId);
         if ($dependency) {
-            $dependency->delete(); // Soft delete
+            $dependency->delete();
             $this->loadNetworkData();
             $this->dispatch('notify', ['message' => 'Dependensi berhasil dihapus.', 'type' => 'success']);
         }
@@ -447,7 +426,6 @@ class NetworkBuilder extends Component
         }
         
         DB::transaction(function() {
-            // Create snapshot before freezing
             AnpStructureSnapshot::createFromStructure(
                 $this->analysis,
                 $this->networkStructure,
@@ -455,7 +433,6 @@ class NetworkBuilder extends Component
                 'Snapshot created when proceeding to criteria comparison'
             );
             
-            // Freeze current structure
             if (!$this->networkStructure->is_frozen) {
                 $this->networkStructure->freeze();
                 
@@ -465,12 +442,10 @@ class NetworkBuilder extends Component
                 ]);
             }
             
-            // Update analysis status
             $this->analysis->status = 'criteria_comparison_pending';
             $this->analysis->save();
         });
         
-        // Set session for next step
         session()->put('anp_pairwise_context', [
             'control_criterion_context_type' => 'goal',
             'control_criterion_context_id' => null,
@@ -484,7 +459,7 @@ class NetworkBuilder extends Component
         return view('livewire.h-r.anp.network-builder', [
             'dependencies' => $this->networkStructure ? 
                 $this->networkStructure->dependencies()
-                    ->whereNull('deleted_at') // Only show non-deleted
+                    ->whereNull('deleted_at') 
                     ->with(['sourceable', 'targetable'])
                     ->get() : 
                 collect(),

@@ -30,9 +30,7 @@ class AnpNetworkStructure extends Model
     {
         parent::booted();
 
-        // Merge both boot logic here
         static::creating(function ($structure) {
-            // Log all structure creations
             Log::info('Creating network structure', [
                 'name' => $structure->name,
                 'for_analysis' => $structure->original_analysis_id
@@ -40,12 +38,10 @@ class AnpNetworkStructure extends Model
         });
 
         static::deleting(function ($networkStructure) {
-            // Existing delete logic
             if ($networkStructure->is_frozen) {
                 throw new \Exception('Cannot delete frozen network structure');
             }
-            
-            // Soft delete semua relasi
+    
             $networkStructure->clusters()->each(function($cluster) {
                 $cluster->delete();
             });
@@ -60,19 +56,16 @@ class AnpNetworkStructure extends Model
         });
     }
 
-    // Relasi ke parent structure
     public function parentStructure(): BelongsTo
     {
         return $this->belongsTo(AnpNetworkStructure::class, 'parent_structure_id');
     }
 
-    // Relasi ke child structures
     public function childStructures(): HasMany
     {
         return $this->hasMany(AnpNetworkStructure::class, 'parent_structure_id');
     }
 
-    // Method untuk freeze structure
     public function freeze()
     {
         $this->update([
@@ -81,7 +74,6 @@ class AnpNetworkStructure extends Model
         ]);
     }
 
-    // Method untuk create snapshot
     public function createSnapshot($name = null)
     {
         $snapshot = $this->replicate();
@@ -92,14 +84,12 @@ class AnpNetworkStructure extends Model
         $snapshot->frozen_at = null;
         $snapshot->save();
 
-        // Deep copy clusters
         $clusterMapping = [];
         foreach ($this->clusters as $cluster) {
             $newCluster = $snapshot->clusters()->create($cluster->only(['name', 'description']));
             $clusterMapping[$cluster->id] = $newCluster->id;
         }
 
-        // Deep copy elements
         $elementMapping = [];
         foreach ($this->elements as $element) {
             $newElement = $snapshot->elements()->create([
@@ -110,7 +100,6 @@ class AnpNetworkStructure extends Model
             $elementMapping[$element->id] = $newElement->id;
         }
 
-        // Deep copy dependencies
         foreach ($this->dependencies as $dependency) {
             $sourceId = null;
             $targetId = null;
@@ -141,19 +130,16 @@ class AnpNetworkStructure extends Model
         return $snapshot;
     }
     
-    // Add scope for finding structures by analysis
     public function scopeForAnalysis($query, $analysisId)
     {
         return $query->where('original_analysis_id', $analysisId);
     }
     
-    // Check if structure is properly isolated
     public function isProperlyIsolated()
     {
         return AnpAnalysis::where('anp_network_structure_id', $this->id)->count() <= 1;
     }
 
-    // Existing relationships...
     public function clusters(): HasMany
     {
         return $this->hasMany(AnpCluster::class);

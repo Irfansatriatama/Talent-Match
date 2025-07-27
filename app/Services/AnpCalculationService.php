@@ -111,7 +111,6 @@ class AnpCalculationService
         $keys = array_keys($matrix);
         $numericMatrix = array_values(array_map('array_values', $matrix));
         
-        // Validasi dan konversi tipe data ke float
         for ($i = 0; $i < $n; $i++) {
             for ($j = 0; $j < $n; $j++) {
                 if (!is_numeric($numericMatrix[$i][$j]) || $numericMatrix[$i][$j] <= 0) {
@@ -122,7 +121,6 @@ class AnpCalculationService
             }
         }
         
-        // Langkah 1: Hitung jumlah setiap kolom
         $columnSums = array_fill(0, $n, 0.0);
         for ($j = 0; $j < $n; $j++) {
             for ($i = 0; $i < $n; $i++) {
@@ -130,7 +128,6 @@ class AnpCalculationService
             }
         }
 
-        // Langkah 2: Hitung Priority Vector (Eigenvector)
         $priorityVectorNumeric = array_fill(0, $n, 0.0);
         for ($i = 0; $i < $n; $i++) {
             $rowSum = 0.0;
@@ -139,21 +136,6 @@ class AnpCalculationService
             }
             $priorityVectorNumeric[$i] = $rowSum / $n;
         }
-
-        // // PERBAIKAN KRITIS: Hitung Lambda Max dengan metode yang benar
-        // $lambdaMax = 0.0;
-        // for ($i = 0; $i < $n; $i++) {
-        //     $weightedSum = 0.0;
-        //     for ($j = 0; $j < $n; $j++) {
-        //         $weightedSum += $numericMatrix[$i][$j] * $priorityVectorNumeric[$j];
-        //     }
-            
-        //     if ($priorityVectorNumeric[$i] > 0) {
-        //         $lambdaMax += $weightedSum / $priorityVectorNumeric[$i];
-        //     }
-        // }
-        // $lambdaMax /= $n; // Rata-rata dari semua rasio// Hitung vektor hasil: A * w
-        
         
         $weightedVector = [];
         for ($i = 0; $i < $n; $i++) {
@@ -164,7 +146,6 @@ class AnpCalculationService
             $weightedVector[$i] = $sum;
         }
 
-        // Hitung λmax: Σ(weightedVector[i] / w[i]) / n
         $lambdaMax = 0.0;
         for ($i = 0; $i < $n; $i++) {
             if ($priorityVectorNumeric[$i] > 0) {
@@ -173,16 +154,12 @@ class AnpCalculationService
         }
         $lambdaMax /= $n;
 
-        // Langkah 4: Hitung Consistency Index (CI)
         $ci = ($n > 2) ? ($lambdaMax - $n) / ($n - 1) : 0;
         
-        // Langkah 5: Dapatkan Random Index (RI)
         $ri = $this->randomIndices[$n] ?? $this->randomIndices[10] ?? 1.49;
         
-        // Langkah 6: Hitung Consistency Ratio (CR)
         $cr = ($ri > 0) ? $ci / $ri : 0;
 
-        // Log untuk debugging
         Log::info("ANP Calculation Debug:", [
             'matrix_size' => $n,
             'lambda_max' => round($lambdaMax, 6),
@@ -208,7 +185,6 @@ class AnpCalculationService
         $nodeList = [];
         $idx = 0;
         
-        // Eager load semua relasi yang dibutuhkan
         $analysis->load([
             'networkStructure.elements.cluster', 
             'networkStructure.clusters.elements', 
@@ -222,7 +198,6 @@ class AnpCalculationService
 
         $this->verifyNetworkStructure($analysis);
 
-        // Map clusters
         foreach ($analysis->networkStructure->clusters as $cluster) {
             $key = 'cluster_' . $cluster->id;
             $elementsMap[$key] = $idx;
@@ -235,7 +210,6 @@ class AnpCalculationService
             $idx++;
         }
         
-        // Map elements
         foreach ($analysis->networkStructure->elements as $element) {
             $key = 'element_' . $element->id;
             $elementsMap[$key] = $idx;
@@ -247,8 +221,6 @@ class AnpCalculationService
             ];
             $idx++;
         }
-        
-        // Map alternatives
         foreach ($analysis->candidates as $candidate) {
             $key = 'alternative_' . $candidate->id;
             $elementsMap[$key] = $idx;
@@ -260,13 +232,10 @@ class AnpCalculationService
             ];
             $idx++;
         }
-
-        // Get valid priority vectors dengan eager loading
         $criteriaWeights = $this->getValidPriorityVectors($analysis->criteriaComparisons);
         $interdependencyWeights = $this->getValidPriorityVectors($analysis->interdependencyComparisons);
         $alternativeScores = $this->getValidPriorityVectors($analysis->alternativeComparisons);
 
-        // Check for missing inner dependence comparisons
         $this->checkInnerDependenceComparisons($analysis, $criteriaWeights);
 
         return compact('elementsMap', 'nodeList', 'criteriaWeights', 'interdependencyWeights', 'alternativeScores');
@@ -274,15 +243,12 @@ class AnpCalculationService
 
     private function verifyNetworkStructure(AnpAnalysis $analysis): void
     {
-        // Load struktur saat ini
         $currentStructure = $analysis->networkStructure;
         
-        // Cek apakah struktur frozen
         if (!$currentStructure->is_frozen) {
             throw new \Exception('Network structure must be frozen before calculation');
         }
         
-        // Optional: Verify dengan snapshot terakhir
         $lastSnapshot = AnpStructureSnapshot::where('anp_analysis_id', $analysis->id)
             ->where('snapshot_type', 'proceed_to_comparison')
             ->latest()
@@ -298,12 +264,10 @@ class AnpCalculationService
 
     private function checkInnerDependenceComparisons(AnpAnalysis $analysis, array $criteriaWeights): void
     {
-        // Check if we have inner dependence comparisons for each cluster with multiple elements
         $clusters = $analysis->networkStructure->clusters()->withCount('elements')->get();
         
         foreach ($clusters as $cluster) {
             if ($cluster->elements_count > 1) {
-                // Check if we have comparison for this cluster
                 $hasComparison = collect($criteriaWeights)->contains(function ($comp) use ($cluster) {
                     return $comp->control_criterionable_type === AnpCluster::class 
                         && $comp->control_criterionable_id == $cluster->id;
@@ -347,7 +311,6 @@ class AnpCalculationService
         
         $connectionCount = 0;
 
-        // 1. Add element-to-cluster connections (bottom-up)
         foreach ($nodeList as $idx => $node) {
             if ($node['type'] === 'element' && $node['cluster_key']) {
                 $clusterIdx = $elementsMap[$node['cluster_key']] ?? null;
@@ -359,8 +322,6 @@ class AnpCalculationService
             }
         }
 
-        // 2. CRITICAL FIX: Create proper feedback loops
-        // Collect indices by type
         $alternativeIndices = [];
         $elementIndices = [];
         $clusterIndices = [];
@@ -379,9 +340,7 @@ class AnpCalculationService
             }
         }
         
-        // Create bidirectional feedback between clusters and alternatives
         if (!empty($alternativeIndices) && !empty($clusterIndices)) {
-            // Feedback from clusters to ALL alternatives (distribute influence)
             $feedbackWeight = 1.0 / count($alternativeIndices);
             foreach ($clusterIndices as $clusterIdx) {
                 foreach ($alternativeIndices as $altIdx) {
@@ -390,8 +349,6 @@ class AnpCalculationService
                 }
             }
             
-            // CRITICAL: Add return path from alternatives to elements
-            // This creates the closed circuit needed for ANP
             $returnWeight = 1.0 / count($elementIndices);
             foreach ($alternativeIndices as $altIdx) {
                 foreach ($elementIndices as $elemIdx) {
@@ -403,7 +360,6 @@ class AnpCalculationService
             Log::info("[ANP ID:{$analysis->id}] Added bidirectional feedback loops");
         }
 
-        // 3. Interdependency weights (element to element)
         foreach ($priorityData['interdependencyWeights'] as $comp) {
             if(!$comp->dependency) continue;
             $targetable = $comp->dependency->targetable;
@@ -421,7 +377,6 @@ class AnpCalculationService
             }
         }
 
-        // 4. Alternative scores (alternatives receive influence from elements)
         foreach ($priorityData['alternativeScores'] as $comp) {
             $criterionKey = 'element_' . $comp->anp_element_id;
             $colIdx = $elementsMap[$criterionKey] ?? null;
@@ -437,7 +392,6 @@ class AnpCalculationService
             }
         }
 
-        // 5. Criteria weights (cluster/element inner dependence)
         foreach ($priorityData['criteriaWeights'] as $comp) {
             if ($comp->control_criterionable_type === AnpCluster::class) {
                 $clusterKey = 'cluster_' . $comp->control_criterionable_id;
@@ -457,18 +411,15 @@ class AnpCalculationService
 
         Log::info("[ANP ID:{$analysis->id}] Total connections in unweighted supermatrix: {$connectionCount}");
         
-        // CRITICAL: Add self-loops for stability (damping factor)
-        $dampingFactor = 0.15; // Similar to Google's PageRank
+        $dampingFactor = 0.15; 
         for ($i = 0; $i < $numNodes; $i++) {
             $colSum = array_sum(array_column($supermatrix, $i));
-            if ($colSum < 1e-9) { // Column with no incoming connections
-                // Add self-loop to prevent zero column
+            if ($colSum < 1e-9) { 
                 $supermatrix[$i][$i] = 1.0;
                 Log::info("[ANP ID:{$analysis->id}] Added self-loop to node {$i} ({$nodeList[$i]['name']})");
             }
         }
 
-        // Pre-normalize columns to ensure stochasticity
         for ($j = 0; $j < $numNodes; $j++) {
             $colSum = 0;
             for ($i = 0; $i < $numNodes; $i++) {
@@ -477,26 +428,22 @@ class AnpCalculationService
             
             if ($colSum > 0) {
                 for ($i = 0; $i < $numNodes; $i++) {
-                    // Apply damping to create more stable convergence
                     $supermatrix[$i][$j] = (1 - $dampingFactor) * ($supermatrix[$i][$j] / $colSum) 
                                         + $dampingFactor / $numNodes;
                 }
             }
         }
         
-        // Validate the matrix
         $this->validateSupermatrix($supermatrix, $nodeList, $analysis->id);
         
         return $supermatrix;
     }
 
-    // Tambahkan method validasi
     private function validateSupermatrix(array $matrix, array $nodeList, int $analysisId): void
     {
         $n = count($matrix);
         $issues = [];
         
-        // Check for zero rows
         for ($i = 0; $i < $n; $i++) {
             $rowSum = array_sum($matrix[$i]);
             if ($rowSum < 1e-9) {
@@ -504,7 +451,6 @@ class AnpCalculationService
             }
         }
         
-        // Check for zero columns
         for ($j = 0; $j < $n; $j++) {
             $colSum = 0;
             for ($i = 0; $i < $n; $i++) {
@@ -530,7 +476,6 @@ class AnpCalculationService
         $numNodes = count($nodeList);
         $weightedSupermatrix = $unweightedSupermatrix;
 
-        // Extract cluster weights vs goal
         $clusterWeights = [];
         foreach ($priorityData['criteriaWeights'] as $comp) {
             if ($comp->control_criterionable_type === null && $comp->compared_elements_type === AnpCluster::class) {
@@ -544,7 +489,6 @@ class AnpCalculationService
         if (empty($clusterWeights)) {
             Log::warning("[ANP ID:{$analysis->id}] Bobot Cluster utama (vs Goal) tidak ditemukan. Menggunakan bobot uniform.");
             
-            // Fallback: berikan bobot uniform untuk semua cluster
             $clusterCount = 0;
             foreach ($nodeList as $node) {
                 if ($node['type'] === 'cluster') {
@@ -563,7 +507,6 @@ class AnpCalculationService
             }
         }
 
-        // Apply cluster weights
         for ($j = 0; $j < $numNodes; $j++) {
             $colNode = $nodeList[$j];
             $clusterKey = $colNode['cluster_key'] ?? null;
@@ -576,7 +519,6 @@ class AnpCalculationService
             }
         }
 
-        // Debug: Check matrix before normalization
         $nonZeroCount = 0;
         for ($i = 0; $i < $numNodes; $i++) {
             for ($j = 0; $j < $numNodes; $j++) {
@@ -587,7 +529,6 @@ class AnpCalculationService
         }
         Log::info("[ANP ID:{$analysis->id}] Weighted matrix has {$nonZeroCount} non-zero entries before normalization");
 
-        // Normalize columns
         $columnSums = array_fill(0, $numNodes, 0.0);
         for ($j = 0; $j < $numNodes; $j++) {
             for ($i = 0; $i < $numNodes; $i++) {
@@ -595,7 +536,6 @@ class AnpCalculationService
             }
         }
 
-        // Debug: Log column sums
         $zeroColumns = [];
         for ($j = 0; $j < $numNodes; $j++) {
             if ($columnSums[$j] <= 1e-9) {
@@ -614,7 +554,6 @@ class AnpCalculationService
             }
         }
 
-        // Debug: Sample the weighted matrix
         Log::info("[ANP ID:{$analysis->id}] Sample of weighted matrix after normalization:");
         for ($i = 0; $i < min(5, $numNodes); $i++) {
             $row = [];
@@ -638,15 +577,12 @@ class AnpCalculationService
         $tolerance = $this->convergenceTolerance;
         $maxIter = $this->maxIterations;
         
-        // Store matrices for cycle detection
         $matrixHistory = [];
         $checkCycleEvery = 5;
         
         for ($iteration = 0; $iteration < $maxIter; $iteration++) {
-            // Matrix multiplication (square the matrix)
             $nextMatrix = $this->multiplyMatrix($currentMatrix, $currentMatrix);
             
-            // Check convergence
             $diff = 0;
             for ($i = 0; $i < $n; $i++) {
                 for ($j = 0; $j < $n; $j++) {
@@ -659,9 +595,7 @@ class AnpCalculationService
                 return $nextMatrix;
             }
             
-            // Cycle detection
             if ($iteration > 10 && $iteration % $checkCycleEvery == 0) {
-                // Check against recent history
                 foreach ($matrixHistory as $histIdx => $histMatrix) {
                     $histDiff = 0;
                     for ($i = 0; $i < $n; $i++) {
@@ -671,13 +605,11 @@ class AnpCalculationService
                     }
                     
                     if ($histDiff < $tolerance) {
-                        // Cycle detected - use Cesaro summation
                         Log::warning("Detected cycle at iteration {$iteration}. Using Cesaro sum.");
                         return $this->cesaroSum($matrixHistory, $nextMatrix);
                     }
                 }
                 
-                // Keep only recent history
                 $matrixHistory[] = $currentMatrix;
                 if (count($matrixHistory) > 5) {
                     array_shift($matrixHistory);
@@ -691,13 +623,11 @@ class AnpCalculationService
         return $currentMatrix;
     }
 
-    // Tambahkan method Cesaro summation untuk menangani siklus
     private function cesaroSum(array $matrices, array $currentMatrix): array
     {
         $n = count($currentMatrix);
         $sumMatrix = array_fill(0, $n, array_fill(0, $n, 0.0));
         
-        // Add all matrices including current
         $allMatrices = array_merge($matrices, [$currentMatrix]);
         $count = count($allMatrices);
         
@@ -709,7 +639,6 @@ class AnpCalculationService
             }
         }
         
-        // Average
         for ($i = 0; $i < $n; $i++) {
             for ($j = 0; $j < $n; $j++) {
                 $sumMatrix[$i][$j] /= $count;
@@ -726,7 +655,6 @@ class AnpCalculationService
 
         Log::info('[extractFinalScores] Extracting scores from limit supermatrix');
 
-        // Find all alternative indices and their data
         $alternativeData = [];
         foreach ($nodeList as $idx => $nodeInfo) {
             if ($nodeInfo['type'] === 'alternative') {
@@ -739,13 +667,10 @@ class AnpCalculationService
             return [];
         }
 
-        // CRITICAL FIX: Use row sums instead of single column
-        // In ANP, the limiting priorities are the row sums of the limit supermatrix
         foreach ($alternativeData as $altIdx => $altInfo) {
             $rowSum = 0;
             $nonZeroCount = 0;
             
-            // Sum all values in the row for this alternative
             for ($j = 0; $j < count($limitSupermatrix[0]); $j++) {
                 $value = $limitSupermatrix[$altIdx][$j] ?? 0;
                 $rowSum += $value;
@@ -754,7 +679,6 @@ class AnpCalculationService
                 }
             }
             
-            // Use average if row sum is too high (indicates multiple connections)
             if ($rowSum > 1.5) {
                 $rowSum = $rowSum / $nonZeroCount;
             }
@@ -763,17 +687,14 @@ class AnpCalculationService
             Log::info("[extractFinalScores] Alternative '{$altInfo['name']}' (id: {$altInfo['id']}): raw_score = {$rowSum}");
         }
 
-        // Check if we have meaningful scores
         $totalScore = array_sum($rawScores);
         Log::info('[extractFinalScores] Total score before normalization: ' . $totalScore);
         
-        // Normalize scores to sum to 1
         if ($totalScore > 1e-9) {
             foreach ($rawScores as $userId => &$score) {
                 $score = $score / $totalScore;
             }
         } else {
-            // Fallback to equal weights if all scores are zero
             Log::warning('[extractFinalScores] Total score is zero. Using equal weights.');
             $equalWeight = 1.0 / count($rawScores);
             foreach ($rawScores as $userId => &$score) {
@@ -781,16 +702,13 @@ class AnpCalculationService
             }
         }
 
-        // Create final ranking with proper differentiation
         arsort($rawScores);
         $rankedScores = [];
         $rank = 1;
         $prevScore = null;
         
         foreach ($rawScores as $userId => $score) {
-            // Ensure unique ranking even for very close scores
             if ($prevScore !== null && abs($score - $prevScore) < 1e-6) {
-                // Scores are effectively equal, but still assign different ranks
                 Log::warning("[extractFinalScores] Nearly identical scores detected for rank {$rank}");
             }
             
@@ -803,12 +721,10 @@ class AnpCalculationService
             $prevScore = $score;
         }
 
-        // Validate that we have meaningful differentiation
         $uniqueScores = count(array_unique(array_column($rankedScores, 'score')));
         if ($uniqueScores === 1) {
             Log::error('[extractFinalScores] All candidates have identical scores. Check network structure and comparisons.');
             
-            // Apply tie-breaking based on original alternative comparison scores
             $this->applyTieBreaking($rankedScores, $priorityData);
         } else {
             Log::info('[extractFinalScores] Successfully differentiated ' . $uniqueScores . ' unique score levels');
@@ -817,12 +733,10 @@ class AnpCalculationService
         return $rankedScores;
     }
 
-    // Add tie-breaking method
     private function applyTieBreaking(array &$rankedScores, array $priorityData): void
     {
         Log::info('[applyTieBreaking] Applying tie-breaking logic for identical scores');
         
-        // Get alternative comparison scores as tie-breaker
         $alternativeScores = [];
         foreach ($priorityData['alternativeScores'] as $comp) {
             foreach ($comp->priority_vector as $candidateId => $weight) {
@@ -833,27 +747,22 @@ class AnpCalculationService
             }
         }
         
-        // Calculate average scores per candidate
         $avgScores = [];
         foreach ($alternativeScores as $candidateId => $scores) {
             $avgScores[$candidateId] = array_sum($scores) / count($scores);
         }
         
-        // Re-sort based on tie-breaker
         usort($rankedScores, function($a, $b) use ($avgScores) {
-            // First by ANP score
             if (abs($a['score'] - $b['score']) > 1e-6) {
                 return $b['score'] <=> $a['score'];
             }
             
-            // Then by average alternative comparison score
             $scoreA = $avgScores[$a['user_id']] ?? 0;
             $scoreB = $avgScores[$b['user_id']] ?? 0;
             
             return $scoreB <=> $scoreA;
         });
         
-        // Update ranks
         foreach ($rankedScores as $idx => &$score) {
             $score['rank'] = $idx + 1;
         }

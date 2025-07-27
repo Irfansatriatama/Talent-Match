@@ -36,7 +36,6 @@
                                 <input wire:model.live.debounce.300ms="searchTerm" type="text" class="form-control">
                             </div>
                         </div>
-                        {{-- FILTER BARU: Status --}}
                         <div class="col-md-3">
                             <div class="input-group input-group-outline">
                                 <select wire:model.live="statusFilter" class="form-control">
@@ -115,7 +114,6 @@
                                         </span>
                                     </td>
                                     <td class="align-middle text-center">
-                                        {{-- Tombol Lihat Hasil --}}
                                         <a href="{{ route('h-r.anp.analysis.show', ['anpAnalysis' => $analysis->id]) }}" 
                                            class="text-secondary font-weight-bold text-xs" 
                                            data-bs-toggle="tooltip" 
@@ -123,7 +121,6 @@
                                            title="Lihat Hasil/Detail">
                                             <i class="material-icons text-sm">visibility</i>
                                         </a>
-                                        {{-- Tombol Lanjutkan Proses --}}
                                         @if($analysis->status !== 'completed' && $analysis->status !== 'calculating')
                                             <a href="{{ route('h-r.anp.analysis.network.define', ['anpAnalysis' => $analysis->id]) }}" 
                                                class="text-secondary font-weight-bold text-xs mx-2" 
@@ -133,7 +130,6 @@
                                                 <i class="material-icons text-sm">play_arrow</i>
                                             </a>
                                         @endif
-                                        {{-- Tombol Hapus --}}
                                         <a href="#" 
                                            wire:click="deleteAnalysis({{ $analysis->id }})" 
                                            wire:confirm="Anda yakin ingin menghapus sesi analisis ini secara permanen?" 

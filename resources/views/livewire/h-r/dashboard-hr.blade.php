@@ -280,7 +280,6 @@
 <script src="{{ asset('assets') }}/js/plugins/chartjs.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // GRAFIK DISTRIBUSI MBTI (DONUT CHART)
         const mbtiCtx = document.getElementById("mbtiDistributionChart");
         if (mbtiCtx) {
             new Chart(mbtiCtx.getContext("2d"), {
@@ -323,7 +322,6 @@
             });
         }
 
-        // GRAFIK DISTRIBUSI RIASEC (BAR CHART)
         const riasecCtx = document.getElementById("riasecDistributionChart");
         if (riasecCtx) {
             new Chart(riasecCtx.getContext("2d"), {
@@ -334,12 +332,12 @@
                         label: "Jumlah Kandidat",
                         data: @json($riasecData),
                         backgroundColor: [
-                            '#4caf50', // Realistic - Green
-                            '#2196f3', // Investigative - Blue
-                            '#9c27b0', // Artistic - Purple
-                            '#ff9800', // Social - Orange
-                            '#f44336', // Enterprising - Red
-                            '#607d8b'  // Conventional - Blue Grey
+                            '#4caf50', 
+                            '#2196f3', 
+                            '#9c27b0',
+                            '#ff9800', 
+                            '#f44336', 
+                            '#607d8b' 
                         ],
                         borderColor: [
                             '#388e3c',

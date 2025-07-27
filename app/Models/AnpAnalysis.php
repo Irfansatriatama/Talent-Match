@@ -23,7 +23,7 @@ class AnpAnalysis extends Model
         'description',
     ];
 
-    protected $dates = ['deleted_at', 'completed_at']; // Tambahkan deleted_at
+    protected $dates = ['deleted_at', 'completed_at']; 
 
     protected $casts = [
         'calculation_data' => 'array'
@@ -85,7 +85,7 @@ class AnpAnalysis extends Model
         if (!$this->anp_network_structure_id) {
             return false;
         }
-        
+    
         // Check if structure is truly unique
         $sharedCount = self::where('anp_network_structure_id', $this->anp_network_structure_id)
             ->where('id', '!=', $this->id)
@@ -108,8 +108,8 @@ class AnpAnalysis extends Model
     }
 
     /**
-     * Memeriksa apakah semua perbandingan yang diperlukan untuk analisis ini
-     * telah selesai dibuat dan memiliki rasio konsistensi yang valid.
+     * 
+     * 
      *
      * @return boolean
      */

@@ -28,10 +28,8 @@
                 </div>
                 
                 <div class="card-body p-3">
-                    <!-- Stepper -->
                     <x-anp-stepper currentStep="4" />
                     
-                    <!-- Tabel Peringkat -->
                     <div class="mb-4">
                         <h6 class="mb-3">
                             <i class="material-icons text-sm align-middle">emoji_events</i> 
@@ -110,21 +108,6 @@
                             </div>
                         @endif
                     </div>
-
-                    <!-- Description -->
-                    @if($anpAnalysis->description)
-                        <div class="card border-0 shadow-sm mb-4">
-                            <div class="card-body">
-                                <h6 class="mb-3">
-                                    <i class="material-icons text-sm align-middle">description</i>
-                                    Deskripsi Analisis
-                                </h6>
-                                <p class="text-sm mb-0">{{ $anpAnalysis->description }}</p>
-                            </div>
-                        </div>
-                    @endif
-
-                    <!-- Accordion Riwayat Detail Analisis -->
                     <div class="accordion accordion-flush" id="accordionRiwayat">
                         <div class="accordion-item">
                             <h2 class="accordion-header" id="headingRiwayat">
@@ -139,7 +122,6 @@
                                  aria-labelledby="headingRiwayat" data-bs-parent="#accordionRiwayat">
                                 <div class="accordion-body bg-light p-4">
                                     
-                                    <!-- 1. Struktur Jaringan -->
                                     <div class="mb-5">
                                         <div class="d-flex align-items-center mb-4">
                                             <div class="icon icon-sm icon-shape bg-gradient-primary shadow text-center border-radius-md me-3">
@@ -229,7 +211,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- 2. Perbandingan Kriteria -->
                                     <div class="mb-5">
                                         <div class="d-flex align-items-center mb-4">
                                             <div class="icon icon-sm icon-shape bg-gradient-success shadow text-center border-radius-md me-3">
@@ -322,7 +303,6 @@
                                         @endforelse
                                     </div>
 
-                                    <!-- 3. Perbandingan Interdependensi -->
                                     @if($anpAnalysis->interdependencyComparisons->count() > 0)
                                         <div class="mb-5">
                                             <div class="d-flex align-items-center mb-4">
@@ -404,7 +384,6 @@
                                         </div>
                                     @endif
 
-                                    <!-- 4. Perbandingan Alternatif -->
                                     <div class="mb-2">
                                         <div class="d-flex align-items-center mb-4">
                                             <div class="icon icon-sm icon-shape bg-gradient-warning shadow text-center border-radius-md me-3">

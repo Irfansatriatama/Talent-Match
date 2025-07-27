@@ -31,7 +31,6 @@
         </div>
     </div>
 
-    {{-- DESKRIPSI TES --}}
     <div class="card shadow-none border mb-4">
         <div class="card-body p-3">
             <p class="text-sm mb-0 text-secondary">
@@ -110,7 +109,6 @@
                         </div>
                         <h6 class="text-xs text-muted mb-3 text-center">Seberapa Anda tertarik atau menyukai aktivitas ini?</h6>
                         
-                        {{-- Desktop View --}}
                         <div class="row justify-content-center gx-2 gy-2 d-none d-md-flex">
                             @foreach ($likertScale as $scoreValue => $scoreText)
                                 <div class="col-sm col mb-2">
@@ -144,7 +142,6 @@
                             @endforeach
                         </div>
                         
-                        {{-- Mobile View --}}
                         <div class="d-md-none">
                             <div class="likert-scale-mobile">
                                 @foreach ($likertScale as $scoreValue => $scoreText)

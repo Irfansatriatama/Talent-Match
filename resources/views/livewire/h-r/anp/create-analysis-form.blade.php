@@ -62,7 +62,6 @@
                                         <div class="col-md-6 mb-3" wire:key="candidate-{{ $candidate->id }}">
                                             <div class="d-flex align-items-center justify-content-between p-3 border rounded">
                                                 <div class="d-flex align-items-center flex-grow-1">
-                                                    <!-- Checkbox dipindahkan ke luar form-check untuk menghindari conflict -->
                                                     <div class="me-3">
                                                         <input class="form-check-input" 
                                                             type="checkbox" 
@@ -72,7 +71,6 @@
                                                             style="width: 1.25rem; height: 1.25rem; margin-top: 0;">
                                                     </div>
                                                     
-                                                    <!-- Label area untuk informasi kandidat -->
                                                     <label class="d-flex align-items-center mb-0 flex-grow-1" 
                                                         for="candidate_{{ $candidate->id }}"
                                                         style="cursor: pointer;">
@@ -86,7 +84,6 @@
                                                     </label>
                                                 </div>
                                                 
-                                                <!-- Button Detail -->
                                                 <a href="{{ route('h-r.detail-candidate', ['candidate' => $candidate->id]) }}"
                                                 target="_blank"
                                                 class="btn btn-sm btn-outline-primary mb-0 ms-2">
@@ -97,8 +94,6 @@
                                     @endforeach
                                 </div>
                             </div>
-                            
-                            <!-- Counter pilihan -->
                             @if(count($selected_candidates) > 0)
                                 <p class="text-sm text-info mt-2">
                                     <i class="material-icons text-sm align-middle">check_circle</i>
@@ -120,7 +115,6 @@
                         @error('selected_candidates') <div class="text-danger text-xs ps-1 mt-1">{{ $message }}</div> @enderror
                     </div>
                 @else
-                    <!-- Pesan instruksi jika posisi belum dipilih -->
                     <div class="alert alert-info text-white">
                         <i class="material-icons text-sm align-middle">info</i>
                         Silakan pilih posisi jabatan terlebih dahulu untuk melihat daftar kandidat yang tersedia.
@@ -160,7 +154,6 @@
 
 @push('js')
 <script>
-    // Debug 
     document.addEventListener('livewire:load', function () {
         Livewire.on('debugState', function (data) {
             console.log('Livewire State:', data);
@@ -170,7 +163,6 @@
 @endpush
 
 <style>
-    /* Pastikan checkbox terlihat dengan benar */
     .form-check-input[type="checkbox"] {
         -webkit-appearance: checkbox !important;
         -moz-appearance: checkbox !important;
@@ -180,7 +172,6 @@
         margin: 0 !important;
     }
     
-    /* Hover effect untuk container */
     .border:hover {
         background-color: #f8f9fa;
         transition: background-color 0.2s;

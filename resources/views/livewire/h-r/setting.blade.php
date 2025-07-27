@@ -413,7 +413,6 @@
                                             <div id="collapseGroup{{ $groupIndex }}" class="accordion-collapse collapse {{ $groupIndex === 0 ? 'show' : '' }}" 
                                                 data-bs-parent="#accordionMBTI">
                                                 <div class="accordion-body p-4">
-                                                    <!-- Group Overview -->
                                                     <div class="alert alert-{{ $group['color'] }} mb-4 rounded-3">
                                                         <h6 class="alert-heading mb-2 text-white">
                                                             <i class="material-icons text-sm align-middle me-1">info</i>
@@ -428,8 +427,6 @@
                                                             @endforeach
                                                         </small>
                                                     </div>
-                                                    
-                                                    <!-- Individual Types -->
                                                     <div class="row">
                                                         @foreach($group['types'] as $type)
                                                         <div class="col-md-6 mb-4">
@@ -442,7 +439,6 @@
                                                                     <small class="opacity-8 text-white">{{ $type['traits'] }}</small>
                                                                 </div>
                                                                 <div class="card-body p-3">
-                                                                    <!-- Strengths -->
                                                                     <div class="mb-3">
                                                                         <h6 class="text-xs text-uppercase mb-2">
                                                                             <i class="material-icons text-sm align-middle text-success">thumb_up</i>
@@ -454,8 +450,6 @@
                                                                             @endforeach
                                                                         </div>
                                                                     </div>
-                                                                    
-                                                                    <!-- Work Style -->
                                                                     <div class="mb-3">
                                                                         <h6 class="text-xs text-uppercase mb-2">
                                                                             <i class="material-icons text-sm align-middle text-info">work</i>
@@ -463,8 +457,6 @@
                                                                         </h6>
                                                                         <p class="text-xs mb-0">{{ $type['work_style'] }}</p>
                                                                     </div>
-                                                                    
-                                                                    <!-- Best For -->
                                                                     <div class="mb-3">
                                                                         <h6 class="text-xs text-uppercase mb-2">
                                                                             <i class="material-icons text-sm align-middle text-primary">star</i>
@@ -477,7 +469,6 @@
                                                                         </div>
                                                                     </div>
                                                                     
-                                                                    <!-- Avoid -->
                                                                     <div class="mb-3">
                                                                         <h6 class="text-xs text-uppercase mb-2">
                                                                             <i class="material-icons text-sm align-middle text-danger">block</i>
@@ -489,8 +480,6 @@
                                                                             @endforeach
                                                                         </div>
                                                                     </div>
-                                                                    
-                                                                    <!-- Team Role -->
                                                                     <div class="alert alert-light mb-0 rounded-3">
                                                                         <h6 class="text-xs text-uppercase mb-2">
                                                                             <i class="material-icons text-sm align-middle">group</i>
@@ -510,7 +499,6 @@
                                     </div>
                                 </div>
                                 
-                                <!-- HR Tips Sidebar -->
                                 <div class="col-md-4">
                                     <div class="card sticky-top rounded-3">
                                         <div class="card-header bg-gradient-dark text-white rounded-top-3">
@@ -520,7 +508,6 @@
                                             </h6>
                                         </div>
                                         <div class="card-body p-3">
-                                            <!-- Interview Tips -->
                                             <div class="mb-4">
                                                 <h6 class="text-primary mb-2">
                                                     <i class="material-icons text-sm align-middle me-1">quiz</i>
@@ -554,7 +541,6 @@
                                                 </ul>
                                             </div>
                                             
-                                            <!-- Team Composition -->
                                             <div class="mb-4">
                                                 <h6 class="text-success mb-2">
                                                     <i class="material-icons text-sm align-middle me-1">groups</i>
@@ -576,7 +562,6 @@
                                                 </div>
                                             </div>
                                             
-                                            <!-- Red Flags -->
                                             <div class="mb-4">
                                                 <h6 class="text-danger mb-2">
                                                     <i class="material-icons text-sm align-middle me-1">warning</i>
@@ -606,7 +591,6 @@
                                                 </ul>
                                             </div>
                                             
-                                            <!-- Career Development -->
                                             <div class="mb-4">
                                                 <h6 class="text-info mb-2">
                                                     <i class="material-icons text-sm align-middle me-1">trending_up</i>
@@ -628,7 +612,6 @@
                                                 </ul>
                                             </div>
                                             
-                                            <!-- Performance Management -->
                                             <div>
                                                 <h6 class="text-warning mb-2">
                                                     <i class="material-icons text-sm align-middle me-1">assessment</i>
@@ -651,7 +634,6 @@
                 </div>
             </div>
             
-            <!-- RIASEC Information -->
             <div class="row mt-4">
                 <div class="col-md-6">
                     <div class="card">

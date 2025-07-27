@@ -13,8 +13,8 @@ class AnpElement extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'anp_network_structure_id',  // Konsisten dengan kode lama
-        'anp_cluster_id',            // Konsisten dengan kode lama
+        'anp_network_structure_id',
+        'anp_cluster_id',    
         'name',
         'description',
     ];

@@ -79,7 +79,6 @@ class Setting extends Component
         try {
             $jobPosition = JobPosition::find($id);
             
-            // Cek apakah ada analisis yang sedang aktif
             $activeAnalyses = $jobPosition->analyses()
                 ->whereIn('status', ['in_progress', 'calculating'])
                 ->exists();
@@ -89,7 +88,6 @@ class Setting extends Component
                 return;
             }
             
-            // Soft delete - data tetap ada di database
             $jobPosition->delete();
             
             session()->flash('message', 'Posisi Jabatan berhasil dihapus.');

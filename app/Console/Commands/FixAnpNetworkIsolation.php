@@ -20,7 +20,6 @@ class FixAnpNetworkIsolation extends Command
         
         $this->info('Scanning for shared network structures...');
         
-        // Find all shared structures
         $sharedStructures = DB::table('anp_analyses')
             ->select('anp_network_structure_id', DB::raw('COUNT(*) as usage_count'))
             ->whereNotNull('anp_network_structure_id')
@@ -38,16 +37,13 @@ class FixAnpNetworkIsolation extends Command
         foreach ($sharedStructures as $shared) {
             $this->line("\nProcessing structure #{$shared->anp_network_structure_id} (used by {$shared->usage_count} analyses)");
             
-            // Get all analyses using this structure
             $analyses = AnpAnalysis::where('anp_network_structure_id', $shared->anp_network_structure_id)
                 ->orderBy('id')
                 ->get();
                 
-            // Keep the first analysis with original structure
             $firstAnalysis = $analyses->shift();
             $this->line("  Keeping original for analysis #{$firstAnalysis->id}: {$firstAnalysis->name}");
             
-            // Create isolated copies for others
             foreach ($analyses as $analysis) {
                 $this->line("  Creating isolated copy for analysis #{$analysis->id}: {$analysis->name}");
                 
@@ -71,7 +67,6 @@ class FixAnpNetworkIsolation extends Command
         DB::transaction(function () use ($analysis) {
             $oldStructure = $analysis->networkStructure;
             
-            // Create new structure
             $newStructure = AnpNetworkStructure::create([
                 'name' => "Network untuk {$analysis->name} (Isolated)",
                 'description' => $oldStructure->description . " (Isolated copy)",
@@ -81,7 +76,6 @@ class FixAnpNetworkIsolation extends Command
                 'is_template' => false
             ]);
             
-            // Copy clusters
             $clusterMap = [];
             foreach ($oldStructure->clusters as $cluster) {
                 $newCluster = $newStructure->clusters()->create([
@@ -91,7 +85,6 @@ class FixAnpNetworkIsolation extends Command
                 $clusterMap[$cluster->id] = $newCluster->id;
             }
             
-            // Copy elements
             $elementMap = [];
             foreach ($oldStructure->elements as $element) {
                 $newElement = $newStructure->elements()->create([
@@ -102,7 +95,6 @@ class FixAnpNetworkIsolation extends Command
                 $elementMap[$element->id] = $newElement->id;
             }
             
-            // Copy dependencies
             foreach ($oldStructure->dependencies as $dep) {
                 $sourceId = $dep->sourceable_type == AnpCluster::class ? 
                     ($clusterMap[$dep->sourceable_id] ?? null) : 
@@ -123,7 +115,6 @@ class FixAnpNetworkIsolation extends Command
                 }
             }
             
-            // Update analysis
             $analysis->anp_network_structure_id = $newStructure->id;
             $analysis->save();
         });

@@ -23,10 +23,8 @@ class AnpCluster extends Model
         parent::booted();
 
         static::deleting(function ($cluster) {
-            // Soft delete semua elemen yang ada di dalam cluster ini
             $cluster->elements()->delete();
 
-            // Soft delete juga semua dependensi yang menjadikan cluster ini sebagai sumber atau target
             \App\Models\AnpDependency::where(function ($query) use ($cluster) {
                 $query->where('sourceable_type', self::class)
                       ->where('sourceable_id', $cluster->id);

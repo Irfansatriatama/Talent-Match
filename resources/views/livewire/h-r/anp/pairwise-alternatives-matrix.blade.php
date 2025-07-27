@@ -7,7 +7,6 @@
         <div class="card-body">
             <x-anp-stepper currentStep="3" />
 
-            {{-- KONTEKS PERBANDINGAN --}}
             <div class="alert alert-light text-dark p-3 text-center mb-4" role="alert">
                 <h6 class="text-dark mb-1">Konteks Kriteria</h6>
                 <p class="mb-0">
@@ -53,7 +52,6 @@
                     </div>
                 </div>
 
-                {{-- MATRIKS PERBANDINGAN --}}
                 <div class="table-responsive mb-4">
                     <table class="table table-bordered text-center align-items-center">
                         <thead>
@@ -102,7 +100,6 @@
                     </table>
                 </div>
 
-                {{-- IMPLEMENTASI PANDUAN PENGISIAN MATRIKS --}}
                 <div class="row mb-4">
                     <div class="col-12">
                         <x-anp-matrix-guide />

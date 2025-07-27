@@ -5,10 +5,8 @@
             <p class="text-sm">Bandingkan tingkat kepentingan relatif antar item di bawah ini.</p>
         </div>
         <div class="card-body">
-            {{-- IMPLEMENTASI KOMPONEN STEPPER --}}
             <x-anp-stepper currentStep="3" />
 
-            {{-- KONTEKS PERBANDINGAN --}}
             <div class="alert alert-light text-dark p-3 text-center mb-4" role="alert">
                 <h6 class="text-dark mb-1">Konteks Perbandingan</h6>
                 <p class="mb-0">
@@ -28,7 +26,6 @@
                     Minimal 2 item diperlukan untuk perbandingan. Silakan kembali ke halaman Definisi Jaringan untuk menambahkan elemen/cluster.
                 </div>
             @else
-                {{-- MATRIKS PERBANDINGAN --}}
                 <div class="table-responsive mb-4">
                     <table class="table table-bordered text-center align-items-center">
                         <thead>
@@ -51,14 +48,12 @@
                                         <td class="p-1 align-middle" wire:key="cell-{{ $rowElement->id }}-{{ $colElement->id }}">
                                             <div class="input-group input-group-outline">
                                                 @if ($rowElement->id == $colElement->id)
-                                                    {{-- Diagonal cells are always 1 --}}
                                                     <input type="text" 
                                                         class="form-control form-control-sm text-center bg-light" 
                                                         value="1" 
                                                         readonly 
                                                         disabled>
                                                 @else
-                                                    {{-- All non-diagonal cells are editable --}}
                                                     <input type="number" 
                                                         step="any" 
                                                         min="0.11" 
@@ -79,21 +74,16 @@
                     </table>
                 </div>
 
-                {{-- IMPLEMENTASI PANDUAN PENGISIAN MATRIKS --}}
                 <div class="row mb-4">
                     <div class="col-12">
                         <x-anp-matrix-guide />
                     </div>
                 </div>
 
-                {{-- AREA BAWAH: 2 KOLOM --}}
                 <div class="row">
-                    {{-- KOLOM KIRI: PANDUAN SKALA SAATY --}}
                     <div class="col-lg-5">
                         <x-saaty-scale-guide />
                     </div>
-
-                    {{-- KOLOM KANAN: HASIL KALKULASI & AKSI --}}
                     <div class="col-lg-7">
                         <div class="card bg-gray-100">
                             <div class="card-header pb-2">

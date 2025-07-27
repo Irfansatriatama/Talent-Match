@@ -1,6 +1,5 @@
 <div class="card-header p-3">
     <div class="card">
-        {{-- Bagian Header dan Panduan tidak berubah --}}
         <div class="card-header p-3">
             <h5 class="mb-0">Pembangun Jaringan Keputusan (Network Builder)</h5>
             <p class="text-sm mb-0">Definisikan kriteria (elemen), kelompokkan (cluster), dan tentukan hubungan antar keduanya (interdependensi).</p>
@@ -283,14 +282,12 @@
 
 @push('styles')
 <style>
-    /* Tambahkan border hanya untuk layar besar untuk memisahkan kolom */
     @media (min-width: 992px) {
         .border-end-lg {
             border-right: 1px solid #e9ecef;
         }
     }
     
-    /* Konsistensi button dengan hover effects */
     .btn-primary {
         background: linear-gradient(195deg, #42424a 0%, #191919 100%);
         border: none;
@@ -303,7 +300,6 @@
         box-shadow: 0 14px 26px -12px rgba(0, 0, 0, 0.4), 0 4px 23px 0 rgba(0, 0, 0, 0.15), 0 8px 10px -5px rgba(0, 0, 0, 0.2);
     }
     
-    /* Delete button style - icon only tanpa border */
     .btn-delete-icon {
         background: transparent;
         border: none;
@@ -331,7 +327,6 @@
         transform: rotate(10deg);
     }
     
-    /* Button icon animations */
     .btn-hover-transform {
         position: relative;
         overflow: hidden;
@@ -350,7 +345,6 @@
         transform: scale(1.1);
     }
     
-    /* Tombol ikon yang lebih baik */
     .btn-icon-only {
         width: 2rem;
         height: 2rem;
@@ -365,13 +359,11 @@
         font-size: 1rem;
     }
     
-    /* Special untuk delete icon */
     .btn-delete-icon.btn-icon-only {
         width: 1.75rem;
         height: 1.75rem;
     }
     
-    /* Card improvements */
     .card {
         border: none;
         box-shadow: 0 0 2rem 0 rgba(136, 152, 170, 0.15);
@@ -382,7 +374,6 @@
         border-bottom: 1px solid #dee2e6;
     }
     
-    /* List hover effects */
     .hover-bg-light {
         transition: all 0.2s ease;
         border-radius: 0.375rem;
@@ -393,7 +384,6 @@
         padding-left: 12px !important;
     }
     
-    /* Badge improvements */
     .badge.rounded-pill {
         padding: 0.35em 0.65em;
         font-weight: 400;
@@ -415,7 +405,6 @@
         background: linear-gradient(195deg, #FFA726 0%, #FB8C00 100%);
     }
     
-    /* Styling untuk list */
     .list-group-flush > .list-group-item {
         border-width: 0 0 1px;
         border-color: #e9ecef;
@@ -425,7 +414,6 @@
         border-bottom-width: 0;
     }
 
-    /* Custom scrollbar */
     .custom-scrollbar::-webkit-scrollbar {
         width: 6px;
     }
@@ -444,7 +432,6 @@
         background: #191919;
     }
 
-    /* Form improvements */
     .input-group-outline {
         transition: all 0.3s ease;
     }
@@ -462,13 +449,11 @@
         box-shadow: none;
     }
 
-    /* Badge yang lebih kecil untuk info cluster di daftar elemen */
     .badge.text-xxs {
         font-size: 0.65rem;
         padding: 0.25em 0.5em;
     }
 
-    /* Collapsible guide styles */
     .collapse-toggle {
         transition: all 0.3s ease;
         cursor: pointer;
@@ -490,7 +475,6 @@
         transform: rotate(0deg);
     }
 
-    /* Smooth collapse animation */
     .collapse {
         transition: all 0.3s ease;
     }
@@ -499,7 +483,6 @@
         transition: height 0.3s ease;
     }
     
-    /* Animations */
     @keyframes pulse {
         0% {
             transform: scale(1);
@@ -547,7 +530,6 @@
         animation: fadeIn 0.3s ease;
     }
     
-    /* Material icon improvements */
     .material-icons.opacity-5 {
         opacity: 0.5;
     }
@@ -557,7 +539,6 @@
 @push('scripts')
 <script>
 document.addEventListener('livewire:load', function () {
-    // Smooth scroll untuk lists
     const lists = document.querySelectorAll('.custom-scrollbar');
     lists.forEach(list => {
         list.addEventListener('wheel', (e) => {
@@ -566,7 +547,6 @@ document.addEventListener('livewire:load', function () {
         });
     });
     
-    // Button click feedback
     document.addEventListener('click', function(e) {
         if (e.target.matches('.btn, .btn *')) {
             const btn = e.target.closest('.btn');
@@ -577,7 +557,6 @@ document.addEventListener('livewire:load', function () {
         }
     });
     
-    // Livewire loading states
     Livewire.hook('message.sent', () => {
         document.querySelectorAll('.btn').forEach(btn => {
             if (!btn.disabled) {
@@ -595,7 +574,6 @@ document.addEventListener('livewire:load', function () {
     });
     
     Livewire.on('refreshComponent', () => {
-        // Add fade in effect to new elements
         const newElements = document.querySelectorAll('.list-group-item');
         newElements.forEach((el, index) => {
             el.style.opacity = '0';

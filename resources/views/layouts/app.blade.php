@@ -45,7 +45,6 @@
 
     @auth
     <script>
-        // Session keep-alive ping
         setInterval(function() {
             fetch('{{ route("keep-alive") }}', {
                 method: 'POST',
@@ -61,7 +60,7 @@
             .catch(error => {
                 console.error('Session refresh failed:', error);
             });
-        }, 300000); // Ping setiap 5 menit (300000 ms)
+        }, 300000); 
     </script>
     @endauth
 </x-layouts.base>

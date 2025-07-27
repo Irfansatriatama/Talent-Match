@@ -323,7 +323,7 @@ class PairwiseAlternativesMatrix extends Component
             'type' => 'info'
         ]);
 
-        Log::info('Analisis siap! Memulai proses kalkulasi di AnpCalculationService.'); // LOG 6
+        Log::info('Analisis siap! Memulai proses kalkulasi di AnpCalculationService.');
         try {
             $this->analysis->update(['status' => 'calculating']);
             

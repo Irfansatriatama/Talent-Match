@@ -6,8 +6,6 @@
                 <p class="text-secondary">Selesaikan semua asesmen untuk mendapatkan hasil yang komprehensif dan rekomendasi yang lebih akurat.</p>
             </div>
         </div>
-
-        {{-- Session Messages --}}
         @if (session()->has('info'))
             <div class="alert alert-info text-white alert-dismissible fade show" role="alert">
                 <span class="alert-icon"><i class="material-icons text-sm">info</i></span>

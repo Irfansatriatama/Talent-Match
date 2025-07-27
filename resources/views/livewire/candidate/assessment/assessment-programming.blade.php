@@ -1,5 +1,4 @@
 <div x-data="assessmentProgramming()" x-init="init()">
-    {{-- BAR STICKY UNTUK INFORMASI TES --}}
     <div class="card shadow-sm mb-4 sticky-top" style="top: 15px; z-index: 1020; background-color: #ffffff;">
         <div class="card-body p-3">
             <div class="row align-items-center">
@@ -31,7 +30,6 @@
         </div>
     </div>
 
-    {{-- DESKRIPSI TES --}}
     <div class="card shadow-none border mb-4">
         <div class="card-body p-3">
             <p class="text-sm mb-0 text-secondary">
@@ -40,7 +38,6 @@
         </div>
     </div>
 
-    {{-- Area Notifikasi Session Flash --}}
     <div id="js-session-notification-area-programming" class="mb-3">
         @if (session()->has('error'))
             <div class="alert alert-danger text-white alert-dismissible fade show" role="alert">
